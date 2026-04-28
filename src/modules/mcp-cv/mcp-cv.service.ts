@@ -26,6 +26,10 @@ export class McpCvService {
 
   // ─── Helper ───────────────────────────────────────────────────────────────
 
+  async getCv() {
+    return this.fetchCv();
+  }
+
   private async fetchCv() {
     return this.db.my_cv.findFirst({
       where: { is_delete: false },
