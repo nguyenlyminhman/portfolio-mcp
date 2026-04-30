@@ -1,54 +1,68 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { WebSocketServer } from '@nestjs/websockets';
-import { Server } from 'socket.io'
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
+import { ChatService } from '../chat/chat.service';
 
+@WebSocketGateway({
+  cors: { origin: '*' }, // đổi lại domain frontend khi production
+  namespace: '/chat',
+})
+export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer()
+  server: Server;
 
-@Injectable()
-export class SocketGateway implements OnModuleInit {
-    @WebSocketServer()
-    server: Server;
+  private readonly clients = new Map<string, Socket>();
 
-    private readonly clients = new Map<string, any>();
+  constructor(private readonly chatService: ChatService) {}
 
-    onModuleInit(): void {
-        // Called once when the Nest module is initialized.
-        // Initialize in-memory structures and attach lightweight shutdown handlers.
-        console.info('[SocketGateway] initialized');
+  // ─── Lifecycle ────────────────────────────────────────────────────────────
 
-        const shutdown = () => {
-            console.info('[SocketGateway] shutting down — clearing connected clients');
-            this.clients.clear();
-        };
+  handleConnection(client: Socket) {
+    console.info(`[SocketGateway] connected: ${client.id}`);
+    this.clients.set(client.id, client);
+  }
 
-        // Register simple process signal handlers to allow cleanup if the process is terminated.
-        process.on('SIGINT', shutdown);
-        process.on('SIGTERM', shutdown);
+  handleDisconnect(client: Socket) {
+    console.info(`[SocketGateway] disconnected: ${client.id}`);
+    this.clients.delete(client.id);
+  }
+
+  // ─── Events ───────────────────────────────────────────────────────────────
+
+  // HR gửi tin nhắn
+  // Payload: { sessionId: string, content: string }
+  @SubscribeMessage('message')
+  async handleMessage(
+    @MessageBody() data: { sessionId: string; content: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { sessionId, content } = data;
+
+    if (!sessionId || !content?.trim()) {
+      client.emit('error', { message: 'sessionId và content không được để trống' });
+      return;
     }
 
-    // Register a connected client (id should be unique per connection) and its associated socket/connection object.        
-    registerClient(id: string, client: any): void {
-        this.clients.set(id, client);
-    }
+    try {
+      // Báo HR biết bot đang gõ
+      client.emit('typing', { status: true });
 
-    // Remove a disconnected client
-    unregisterClient(id: string): void {
-        this.clients.delete(id);
-    }
+      const reply = await this.chatService.chat(sessionId, content);
 
-    // Broadcast an event/payload to all registered clients.
-    // This is defensive and supports common client APIs (emit/send).
-    broadcast(event: string, payload: unknown): void {
-        for (const client of this.clients.values()) {
-            try {
-                if (client && typeof client.emit === 'function') {
-                    client.emit(event, payload);
-                } else if (client && typeof client.send === 'function') {
-                    // fall back to JSON string if client expects raw messages
-                    client.send(JSON.stringify({ event, payload }));
-                }
-            } catch (err) {
-                console.warn('[SocketGateway] failed to send to a client', err);
-            }
-        }
+      // Gửi reply về đúng client đó
+      client.emit('reply', { content: reply });
+    } catch (err) {
+      console.error('[SocketGateway] chat error:', err);
+      client.emit('error', { message: 'Có lỗi xảy ra, vui lòng thử lại.' });
+    } finally {
+      client.emit('typing', { status: false });
     }
+  }
 }
