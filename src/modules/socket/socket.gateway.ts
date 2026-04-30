@@ -20,7 +20,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly clients = new Map<string, Socket>();
 
-  constructor(private readonly chatService: ChatService) {}
+  constructor(private readonly chatService: ChatService) { }
 
   // ─── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -40,13 +40,27 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Payload: { sessionId: string, content: string }
   @SubscribeMessage('message')
   async handleMessage(
-    @MessageBody() data: { sessionId: string; content: string },
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ) {
-    const { sessionId, content } = data;
 
-    if (!sessionId || !content?.trim()) {
-      client.emit('error', { message: 'sessionId và content không được để trống' });
+    let payload = data;
+
+    // 1. Kiểm tra và Parse nếu data là chuỗi JSON
+    if (typeof data === 'string') {
+      try {
+        payload = JSON.parse(data);
+      } catch (e) {
+        client.emit('error', { message: 'sessionId và content không được để trống 0' });
+        return;
+      }
+    }
+
+    // 2. Trích xuất dữ liệu từ payload đã parse
+    const { sessionId, content } = payload;
+
+    if (sessionId === '' || content?.trim() === '') {
+      client.emit('error', { message: 'sessionId và content không được để trống 1' });
       return;
     }
 
@@ -54,7 +68,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Báo HR biết bot đang gõ
       client.emit('typing', { status: true });
 
+      console.log(`[SocketGateway] Received message from client :`, sessionId, content);
       const reply = await this.chatService.chat(sessionId, content);
+
+      console.log('reply:', reply);
 
       // Gửi reply về đúng client đó
       client.emit('reply', { content: reply });
