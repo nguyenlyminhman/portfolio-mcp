@@ -6,6 +6,7 @@ import { DbConnectService } from '../db-connect/db-connect.service';
   providers: [
     McpCvService, 
     DbConnectService
-  ]
+  ],
+  exports: [McpCvService],
 })
 export class McpCvModule {}

@@ -4,6 +4,7 @@ import { DbConnectModule } from '../db-connect/db-connect.module';
 
 @Module({
   imports: [DbConnectModule],
-  providers: [McpChatHistoryService]
+  providers: [McpChatHistoryService],
+  exports: [McpChatHistoryService],
 })
 export class McpChatHistoryModule {}
