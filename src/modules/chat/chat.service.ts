@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 import { McpCvService } from '../mcp-cv/mcp-cv.service';
 import { McpGithubService } from '../mcp-github/mcp-github.service';
 import { McpChatHistoryService } from '../mcp-chat-history/mcp-chat-history.service';
 
 const SYSTEM_PROMPT = `
 Bạn là trợ lý ảo đại diện cho Nguyễn Lý Minh Mẫn — một Senior Full Stack Software Engineer với hơn 8 năm kinh nghiệm.
-
 Nhiệm vụ của bạn là thay Mẫn trả lời các câu hỏi từ HR và Tech team một cách chuyên nghiệp, tự nhiên và trung thực.
 
 Nguyên tắc khi trả lời:
@@ -20,47 +19,41 @@ Nguyên tắc khi trả lời:
 
 @Injectable()
 export class ChatService {
-    private anthropic: Anthropic;
+    private genAI: GoogleGenerativeAI;
 
     constructor(
         private readonly cvMcp: McpCvService,
         private readonly githubMcp: McpGithubService,
         private readonly historyMcp: McpChatHistoryService,
     ) {
-        this.anthropic = new Anthropic({
-            apiKey: process.env.ANTHROPIC_API_KEY,
-        });
+        // Khởi tạo SDK với API Key của bạn
+        this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
     }
 
-    // ─── Main: xử lý 1 lượt chat ─────────────────────────────────────────────
-
     async chat(sessionId: string, userMessage: string): Promise<string> {
-        // 1. Lấy hoặc tạo conversation
-        const conversation =
-            await this.historyMcp.getOrCreateConversation(sessionId);
+        // 1. Lấy hoặc tạo phiên hội thoại từ database
+        const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
 
-        // 2. Lưu tin nhắn HR
+        // 2. Lưu tin nhắn của người dùng (HR)
         await this.historyMcp.saveMessage(conversation.id, 'hr', userMessage);
 
-        // 3. Thu thập context song song
+        // 3. Lấy dữ liệu ngữ cảnh
         const [history, cv, repos] = await Promise.all([
             this.historyMcp.getHistory(conversation.id),
             this.cvMcp.getCv(),
             this.githubMcp.listRepos(),
         ]);
 
-        // 4. Gọi Claude
-        const reply = await this.callClaude({ userMessage, history, cv, repos });
+        // 4. Gọi API Gemini 2.0 Flash
+        const reply = await this.callGemini({ userMessage, history, cv, repos });
 
-        // 5. Lưu reply của bot
+        // 5. Lưu phản hồi của bot
         await this.historyMcp.saveMessage(conversation.id, 'bot', reply);
 
         return reply;
     }
 
-    // ─── Gọi Claude API ───────────────────────────────────────────────────────
-
-    private async callClaude(params: {
+    private async callGemini(params: {
         userMessage: string;
         history: { role: string; content: string }[];
         cv: object | null;
@@ -68,7 +61,7 @@ export class ChatService {
     }): Promise<string> {
         const { userMessage, history, cv, repos } = params;
 
-        // Build context block đưa vào system
+        // Xây dựng khối dữ liệu bổ trợ cho mô hình
         const contextBlock = `
 <context>
   <cv>
@@ -77,35 +70,29 @@ export class ChatService {
   <github_repos>
     ${repos.length ? JSON.stringify(repos, null, 2) : 'Không có dữ liệu GitHub'}
   </github_repos>
-</context>
-    `.trim();
+</context>`.trim();
 
-        // Build messages từ lịch sử (bỏ tin nhắn hiện tại vì đã có trong messages)
-        const messages: Anthropic.MessageParam[] = [
-            // Lịch sử cũ
-            ...history.slice(0, -1).map((m) => ({
-                role: (m.role === 'hr' ? 'user' : 'assistant') as 'user' | 'assistant',
-                content: m.content,
-            })),
-            // Tin nhắn hiện tại của HR
-            {
-                role: 'user' as const,
-                content: userMessage,
-            },
-        ];
-
-        const response = await this.anthropic.messages.create({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 1024,
-            system: `${SYSTEM_PROMPT}\n\n${contextBlock}`,
-            messages,
+        // Khởi tạo model với phiên bản 2.0 Flash
+        const model = this.genAI.getGenerativeModel({
+            model: 'gemini-2.0-flash', 
+            systemInstruction: `${SYSTEM_PROMPT}\n\n${contextBlock}`,
         });
 
-        const block = response.content[0];
-        if (block.type !== 'text') {
-            throw new Error('Unexpected response type from Claude');
-        }
+        // Định dạng lại lịch sử chat cho phù hợp với yêu cầu của SDK (user/model)
+        const chatHistory: Content[] = history.slice(0, -1).map((m) => ({
+            role: m.role === 'hr' ? 'user' : 'model',
+            parts: [{ text: m.content }],
+        }));
 
-        return block.text;
+        const chatSession = model.startChat({
+            history: chatHistory,
+            generationConfig: {
+                maxOutputTokens: 1024,
+                temperature: 0.2, // Giảm temperature để câu trả lời chính xác và ít bịa đặt hơn
+            },
+        });
+
+        const result = await chatSession.sendMessage(userMessage);
+        return result.response.text();
     }
 }
