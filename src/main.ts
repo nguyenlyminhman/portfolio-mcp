@@ -26,6 +26,12 @@ async function bootstrap(): Promise<NestExpressApplication> {
   app.use(helmet());
 
   app.useGlobalInterceptors( new LoggingInterceptor() );
+  app.enableCors({
+  // Thay bằng domain chính xác của bạn, không dùng '*'
+  origin: ['http://localhost:3001', 'http://localhost:3001/documentation'], 
+  credentials: true, // Cho phép nhận và gửi Cookie
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+});
 
   app.setGlobalPrefix('/api');
   app.useGlobalPipes(
