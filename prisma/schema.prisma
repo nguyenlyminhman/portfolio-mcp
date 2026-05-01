@@ -60,6 +60,22 @@ model my_cv {
   @@index([is_delete], map: "idx_my_cv_active", where: raw("(is_delete = false)"))
 }
 
+model projects {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  repo_name   String    @db.VarChar(255)
+  description String
+  tech_stack  String[]
+  highlights  String
+  markdown    String
+  github_url  String?   @db.VarChar(255)
+  live_url    String?   @db.VarChar(255)
+  sort_order  Int?      @default(0)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([sort_order(sort: Desc)], map: "idx_projects_feature_order")
+}
+
 model users {
   id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   email         String    @unique
