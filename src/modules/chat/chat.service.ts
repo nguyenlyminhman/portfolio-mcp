@@ -63,14 +63,14 @@ export class ChatService {
 
         // Xây dựng khối dữ liệu bổ trợ cho mô hình
         const contextBlock = `
-<context>
-  <cv>
-    ${cv ? JSON.stringify(cv, null, 2) : 'Không có dữ liệu CV'}
-  </cv>
-  <github_repos>
-    ${repos.length ? JSON.stringify(repos, null, 2) : 'Không có dữ liệu GitHub'}
-  </github_repos>
-</context>`.trim();
+            <context>
+                <cv>
+                    ${cv ? JSON.stringify(cv, null, 2) : 'Không có dữ liệu CV'}
+                </cv>
+                <github_repos>
+                    ${repos.length ? JSON.stringify(repos, null, 2) : 'Không có dữ liệu GitHub'}
+                </github_repos>
+            </context>`.trim();
 
         // Khởi tạo model với phiên bản 2.0 Flash
         const model = this.genAI.getGenerativeModel({

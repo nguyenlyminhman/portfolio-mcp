@@ -1,15 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-
-const GITHUB_USERNAME = 'nguyenlyminhman';
-const GITHUB_API = 'https://api.github.com';
+import { DbConnectService } from '../db-connect/db-connect.service';
 
 @Injectable()
 export class McpGithubService {
   private server: McpServer;
 
-  constructor() {
+  constructor(private readonly db: DbConnectService) {
     this.server = new McpServer({
       name: 'portfolio-github-mcp',
       version: '1.0.0',
@@ -28,66 +26,73 @@ export class McpGithubService {
     return this.fetchRepos();
   }
 
-  async getReadme(repo: string) {
-    return this.fetchReadme(repo);
+  async getRepoDetail(repoName: string) {
+    return this.fetchRepoDetail(repoName);
   }
 
   // ─── Helper ───────────────────────────────────────────────────────────────
 
-  private async githubFetch<T>(path: string): Promise<T> {
-    const headers: Record<string, string> = {
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    };
-    if (process.env.GITHUB_TOKEN) {
-      headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
-    }
-
-    const res = await fetch(`${GITHUB_API}${path}`, { headers });
-
-    if (!res.ok) {
-      throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
-    }
-
-    return res.json() as Promise<T>;
-  }
-
   private async fetchRepos() {
-    const repos = await this.githubFetch<any[]>(
-      `/users/${GITHUB_USERNAME}/repos?sort=updated&per_page=20&type=public`,
-    );
-    return repos.map((r) => ({
-      name: r.name,
-      description: r.description,
-      url: r.html_url,
-      language: r.language,
-      topics: r.topics,
-      stars: r.stargazers_count,
-      updated_at: r.updated_at,
+    const projects = await this.db.projects.findMany({
+      orderBy: { sort_order: 'desc' },
+      select: {
+        repo_name: true,
+        description: true,
+        tech_stack: true,
+        highlights: true,
+        github_url: true,
+        live_url: true,
+        sort_order: true,
+      },
+    });
+
+    return projects.map((p) => ({
+      name: p.repo_name,
+      description: p.description,
+      tech_stack: p.tech_stack,
+      highlights: p.highlights,
+      github_url: p.github_url,
+      live_url: p.live_url,
     }));
   }
 
-  private async fetchReadme(repo: string) {
-    const data = await this.githubFetch<{ content: string }>(
-      `/repos/${GITHUB_USERNAME}/${repo}/readme`,
-    );
-    return Buffer.from(data.content, 'base64').toString('utf-8');
+  private async fetchRepoDetail(repoName: string) {
+    const project = await this.db.projects.findFirst({
+      where: { repo_name: repoName },
+    });
+
+    if (!project) {
+      throw new Error(`Project "${repoName}" not found`);
+    }
+
+    return {
+      name: project.repo_name,
+      description: project.description,
+      tech_stack: project.tech_stack,
+      highlights: project.highlights,
+      markdown: project.markdown,
+      github_url: project.github_url,
+      live_url: project.live_url,
+      created_at: project.created_at,
+      updated_at: project.updated_at,
+    };
   }
 
   // ─── Register Tools ───────────────────────────────────────────────────────
 
   private registerTools() {
     this.registerListRepos();
-    this.registerGetReadme();
     this.registerGetRepoDetail();
+    this.registerGetReadme();
   }
 
   private registerListRepos() {
     this.server.tool(
       'list_repos',
-      `Liệt kê các public repo trên GitHub. Gọi khi HR/Tech hỏi:
+      `Liệt kê tất cả các project trong portfolio. Gọi khi HR/Tech hỏi:
        - "Bạn có project nào?"
-       - "Cho tôi xem portfolio code của bạn"`,
+       - "Cho tôi xem portfolio code của bạn"
+       - "Những dự án tiêu biểu của bạn là gì?"`,
       {},
       async () => {
         const repos = await this.fetchRepos();
@@ -96,45 +101,40 @@ export class McpGithubService {
     );
   }
 
-  private registerGetReadme() {
+  private registerGetRepoDetail() {
     this.server.tool(
-      'get_readme',
-      `Lấy nội dung README của một repo. Gọi khi Tech hỏi:
-       - "Project X này làm gì?"
-       - "Architecture của repo này thế nào?"`,
-      { repo: z.string().describe('Tên repo cần xem README') },
+      'get_repo_detail',
+      `Lấy thông tin chi tiết của một project. Gọi khi Tech hỏi:
+       - "Repo này dùng công nghệ gì?"
+       - "Highlights của project X là gì?"
+       - "Bạn maintain repo này bao lâu rồi?"`,
+      { repo: z.string().describe('Tên repo cần xem chi tiết') },
       async ({ repo }) => {
-        const readme = await this.fetchReadme(repo);
-        return { content: [{ type: 'text', text: readme }] };
+        const detail = await this.fetchRepoDetail(repo);
+        return { content: [{ type: 'text', text: JSON.stringify(detail, null, 2) }] };
       },
     );
   }
 
-  private registerGetRepoDetail() {
+  private registerGetReadme() {
     this.server.tool(
-      'get_repo_detail',
-      `Lấy thông tin chi tiết của một repo. Gọi khi Tech hỏi:
-       - "Repo này dùng công nghệ gì?"
-       - "Bạn maintain repo này bao lâu rồi?"`,
-      { repo: z.string().describe('Tên repo cần xem chi tiết') },
+      'get_readme',
+      `Lấy nội dung markdown chi tiết của một project. Gọi khi Tech hỏi:
+       - "Project X này làm gì?"
+       - "Architecture của project này thế nào?"
+       - "Cho tôi xem mô tả đầy đủ của project X"`,
+      { repo: z.string().describe('Tên repo cần xem README') },
       async ({ repo }) => {
-        const [detail, languages] = await Promise.all([
-          this.githubFetch<any>(`/repos/${GITHUB_USERNAME}/${repo}`),
-          this.githubFetch<Record<string, number>>(
-            `/repos/${GITHUB_USERNAME}/${repo}/languages`,
-          ),
-        ]);
-        const result = {
-          name: detail.name,
-          description: detail.description,
-          url: detail.html_url,
-          languages,
-          topics: detail.topics,
-          stars: detail.stargazers_count,
-          created_at: detail.created_at,
-          updated_at: detail.updated_at,
-        };
-        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+        const project = await this.db.projects.findFirst({
+          where: { repo_name: repo },
+          select: { markdown: true },
+        });
+
+        if (!project) {
+          throw new Error(`Project "${repo}" not found`);
+        }
+
+        return { content: [{ type: 'text', text: project.markdown }] };
       },
     );
   }
