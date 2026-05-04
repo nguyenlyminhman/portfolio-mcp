@@ -1,48 +1,49 @@
--- Đảm bảo extension uuid-ossp đã được kích hoạt để dùng uuid_generate_v4()
--- Extension uuid
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- ============================================================
 -- 1. users
 -- ============================================================
-CREATE TABLE users (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email           TEXT        NOT NULL UNIQUE,
-  password_hash   TEXT        NOT NULL,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  last_login_at   TIMESTAMPTZ
+CREATE TABLE public.users (
+	id uuid NOT NULL,
+	nickname text NULL,
+	"password" text NOT NULL,
+	email text NOT NULL,
+	fullname text NULL,
+	created_at timestamp NULL,
+	created_by text NULL,
+	updated_at timestamp NULL,
+	updated_by text NULL,
+	CONSTRAINT newtable_pk PRIMARY KEY (id),
+	CONSTRAINT users_unique UNIQUE (email)
 );
+
 
 -- ============================================================
 -- 2. my_cv  (master data — độc lập)
 -- ============================================================
-CREATE TABLE my_cv (
-  id          UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name        TEXT        NOT NULL,
-  cv_content  JSONB       NOT NULL DEFAULT '{}',
-  is_delete   BOOLEAN     NOT NULL DEFAULT FALSE,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  created_by  TEXT,
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_by  TEXT
+CREATE TABLE public.my_cv (
+	id uuid NOT NULL,
+	"name" text NOT NULL,
+	cv_content JSONB NOT NULL DEFAULT '{}',
+	created_at timestamp NULL,
+	created_by text NULL,
+	updated_at timestamp NULL,
+	updated_by text NULL,
+	CONSTRAINT my_cv_pk PRIMARY KEY (id)
 );
-
--- Index: chatbot chỉ đọc CV active
-CREATE INDEX idx_my_cv_active ON my_cv (is_delete) WHERE is_delete = FALSE;
 
 -- ============================================================
 -- 3. hr_sessions
 -- ============================================================
-CREATE TABLE hr_sessions (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  cookie_token    TEXT        NOT NULL UNIQUE,   -- giá trị lưu trong cookie HR
-  ip_address      TEXT,
-  user_agent      TEXT,
-  company_hint    TEXT,                          -- bạn tự ghi chú công ty HR
-  is_interesting  BOOLEAN     NOT NULL DEFAULT FALSE,
-  first_seen_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  last_seen_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.hr_sessions (
+	id uuid NOT NULL,
+	cookie_token text NOT NULL,
+	ip_address text NOT NULL,
+	user_agent text NULL,
+	company_hint text NULL,
+	is_interesting bool NULL,
+	first_seen_at timestamp NULL,
+	last_seen_at timestamp NULL,
+	CONSTRAINT hr_sessions_pk PRIMARY KEY (id),
+	CONSTRAINT hr_sessions_unique UNIQUE (cookie_token)
 );
 
 -- Index: lookup nhanh khi HR gửi cookie lên
@@ -53,13 +54,15 @@ CREATE INDEX idx_hr_sessions_last_seen ON hr_sessions (last_seen_at DESC);
 -- ============================================================
 -- 4. conversations
 -- ============================================================
-CREATE TABLE conversations (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  session_id      UUID        NOT NULL REFERENCES hr_sessions (id) ON DELETE CASCADE,
-  started_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  last_message_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  message_count   INT         NOT NULL DEFAULT 0
+CREATE TABLE public.conversations (
+	id uuid NOT NULL,
+	session_id uuid NOT NULL,
+	started_at timestamp NOT NULL,
+	last_message_at timestamp NOT NULL,
+	message_count int4 DEFAULT 0 NOT NULL,
+	CONSTRAINT conversations_pk PRIMARY KEY (id)
 );
+
 
 -- Index: lấy conversation mới nhất của 1 session
 CREATE INDEX idx_conversations_session ON conversations (session_id, last_message_at DESC);
@@ -69,15 +72,14 @@ CREATE INDEX idx_conversations_session ON conversations (session_id, last_messag
 -- ============================================================
 CREATE TYPE message_role AS ENUM ('hr', 'bot');
 
-CREATE TABLE messages (
-  id              UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
-  conversation_id UUID         NOT NULL REFERENCES conversations (id) ON DELETE CASCADE,
-  role            message_role NOT NULL,
-  content         TEXT         NOT NULL,
-  created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-  is_deleted      BOOLEAN      NOT NULL DEFAULT FALSE
+CREATE TABLE public.messages (
+	id uuid NOT NULL,
+	conversation_id uuid NOT NULL,
+	"role" text NOT NULL,
+	"content" text NOT NULL,
+	created_at timestamp NOT null
+	CONSTRAINT messages_pk PRIMARY KEY (id)
 );
-
 -- Index: load messages theo ngày (Admin scroll, chatbot lấy history)
 CREATE INDEX idx_messages_conversation_date ON messages (conversation_id, created_at DESC);
 
@@ -135,7 +137,7 @@ CREATE TRIGGER trg_sync_session_last_seen
   FOR EACH ROW EXECUTE FUNCTION sync_session_last_seen();
 
 CREATE TABLE projects (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id  uuid NOT NULL,
     repo_name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     tech_stack TEXT[] NOT NULL,
@@ -144,8 +146,9 @@ CREATE TABLE projects (
     github_url VARCHAR(255),
     live_url VARCHAR(255),
     sort_order INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    CONSTRAINT projects_pk PRIMARY KEY (id)
 );
 
 -- Tạo Index để AI query "những dự án tiêu biểu" nhanh hơn
