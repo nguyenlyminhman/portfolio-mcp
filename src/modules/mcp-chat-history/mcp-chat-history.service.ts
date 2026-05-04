@@ -3,6 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { message_role } from 'generated/prisma/enums';
 import { z } from 'zod';
 import { DbConnectService } from '../db-connect/db-connect.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class McpChatHistoryService {
@@ -31,7 +32,7 @@ export class McpChatHistoryService {
 
     if (!conversation) {
       conversation = await this.db.conversations.create({
-        data: { session_id: sessionId },
+        data: { id: uuidv4(), session_id: sessionId, started_at: new Date(), last_message_at: new Date() },
         select: { id: true, message_count: true, started_at: true },
       });
     }
@@ -42,9 +43,11 @@ export class McpChatHistoryService {
   async saveMessage(conversationId: string, role: 'hr' | 'bot', content: string) {
     return this.db.messages.create({
       data: {
+        id: uuidv4(),
         conversation_id: conversationId,
         role: role as message_role,
         content,
+        created_at: new Date(),
       },
       select: { id: true, role: true, created_at: true },
     });
@@ -52,7 +55,7 @@ export class McpChatHistoryService {
 
   async getHistory(conversationId: string, limit = 20) {
     const messages = await this.db.messages.findMany({
-      where: { conversation_id: conversationId, is_deleted: false },
+      where: { conversation_id: conversationId },
       orderBy: { created_at: 'desc' },
       take: limit,
       select: { role: true, content: true, created_at: true },

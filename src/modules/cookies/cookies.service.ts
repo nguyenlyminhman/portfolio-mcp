@@ -9,8 +9,9 @@ export class CookiesService {
     ) {}
 
     async createSessionId(): Promise<string> {
-        const rs = uuidv4();
-        await this.db.hr_sessions.create({ data: { cookie_token: rs } });
+        const rs = uuidv4().toString();
+
+        await this.db.hr_sessions.create({ data: { id: uuidv4(), cookie_token: rs , ip_address: '' } });
         return rs;
     }
 }
