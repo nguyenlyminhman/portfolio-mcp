@@ -9,59 +9,63 @@ datasource db {
 }
 
 model conversations {
-  id              String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  session_id      String      @db.Uuid
-  started_at      DateTime    @default(now()) @db.Timestamptz(6)
-  last_message_at DateTime    @default(now()) @db.Timestamptz(6)
-  message_count   Int         @default(0)
-  hr_sessions     hr_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  messages        messages[]
+  id              String   @id(map: "conversations_pk") @db.Uuid
+  session_id      String   @db.Uuid
+  started_at      DateTime @db.Timestamp(6)
+  last_message_at DateTime @db.Timestamp(6)
+  message_count   Int      @default(0)
 
   @@index([session_id, last_message_at(sort: Desc)], map: "idx_conversations_session")
 }
 
 model hr_sessions {
-  id             String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  cookie_token   String          @unique
-  ip_address     String?
+  id             String    @id(map: "hr_sessions_pk") @db.Uuid
+  cookie_token   String    @unique(map: "hr_sessions_unique")
+  ip_address     String
   user_agent     String?
   company_hint   String?
-  is_interesting Boolean         @default(false)
-  first_seen_at  DateTime        @default(now()) @db.Timestamptz(6)
-  last_seen_at   DateTime        @default(now()) @db.Timestamptz(6)
-  conversations  conversations[]
+  is_interesting Boolean?
+  first_seen_at  DateTime? @db.Timestamp(6)
+  last_seen_at   DateTime? @db.Timestamp(6)
 
   @@index([cookie_token], map: "idx_hr_sessions_cookie")
   @@index([last_seen_at(sort: Desc)], map: "idx_hr_sessions_last_seen")
 }
 
 model messages {
-  id              String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  conversation_id String        @db.Uuid
-  role            message_role
+  id              String   @id(map: "messages_pk") @db.Uuid
+  conversation_id String   @db.Uuid
+  role            String
   content         String
-  created_at      DateTime      @default(now()) @db.Timestamptz(6)
-  is_deleted      Boolean       @default(false)
-  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at      DateTime @db.Timestamp(6)
 
   @@index([conversation_id, created_at(sort: Desc)], map: "idx_messages_conversation_date")
 }
 
 model my_cv {
-  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id         String    @id(map: "my_cv_pk") @db.Uuid
   name       String
-  cv_content Json     @default("{}")
-  is_delete  Boolean  @default(false)
-  created_at DateTime @default(now()) @db.Timestamptz(6)
+  cv_content Json      @default("{}")
+  created_at DateTime? @db.Timestamp(6)
   created_by String?
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @db.Timestamp(6)
   updated_by String?
+}
 
-  @@index([is_delete], map: "idx_my_cv_active", where: raw("(is_delete = false)"))
+model users {
+  id         String    @id(map: "newtable_pk") @db.Uuid
+  nickname   String?
+  password   String
+  email      String    @unique(map: "users_unique")
+  fullname   String?
+  created_at DateTime? @db.Timestamp(6)
+  created_by String?
+  updated_at DateTime? @db.Timestamp(6)
+  updated_by String?
 }
 
 model projects {
-  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id          String    @id(map: "projects_pk") @db.Uuid
   repo_name   String    @db.VarChar(255)
   description String
   tech_stack  String[]
@@ -70,18 +74,8 @@ model projects {
   github_url  String?   @db.VarChar(255)
   live_url    String?   @db.VarChar(255)
   sort_order  Int?      @default(0)
-  created_at  DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime? @default(now()) @db.Timestamptz(6)
-
-  @@index([sort_order(sort: Desc)], map: "idx_projects_feature_order")
-}
-
-model users {
-  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  email         String    @unique
-  password_hash String
-  created_at    DateTime  @default(now()) @db.Timestamptz(6)
-  last_login_at DateTime? @db.Timestamptz(6)
+  created_at  DateTime? @db.Timestamp(6)
+  updated_at  DateTime? @db.Timestamp(6)
 }
 
 enum message_role {
