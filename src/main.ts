@@ -1,4 +1,4 @@
-import 'dotenv/config'; 
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
@@ -10,6 +10,7 @@ import helmet from 'helmet';
 import { SharedModule } from './modules/shared/shared.module';
 import { ServerConfigService } from './modules/shared/server-config.service';
 import { SwaggerConfig } from './config/swagger';
+import { GlobalExceptionFilter } from './filter/global.exception.filter';
 
 
 async function bootstrap(): Promise<NestExpressApplication> {
@@ -25,13 +26,15 @@ async function bootstrap(): Promise<NestExpressApplication> {
   app.useStaticAssets(join(__dirname, '..', 'public'));
   app.use(helmet());
 
-  app.useGlobalInterceptors( new LoggingInterceptor() );
+  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalFilters(new GlobalExceptionFilter());
+
   app.enableCors({
-  // Thay bằng domain chính xác của bạn, không dùng '*'
-  origin: ['http://localhost:3001', 'http://localhost:3001/documentation'], 
-  credentials: true, // Cho phép nhận và gửi Cookie
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-});
+    // Thay bằng domain chính xác của bạn, không dùng '*'
+    origin: ['http://localhost:3001', 'http://localhost:3001/documentation'],
+    credentials: true, // Cho phép nhận và gửi Cookie
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  });
 
   app.setGlobalPrefix('/api');
   app.useGlobalPipes(
