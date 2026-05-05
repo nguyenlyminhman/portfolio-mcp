@@ -1,7 +1,7 @@
 // response.helper.ts
 import { HttpStatus } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
-import MetadataDto from 'src/dto/metadata.dto';
+import MetadataDto from 'src/common/dto/metadata.dto';
 
 
 export class ResponseApi<T = any> {

@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { HttpStatus, Logger, SetMetadata } from '@nestjs/common';
-import PaginationDto from 'src/dto/pagination.dto';
+import PaginationDto from 'src/common/dto/pagination.dto';
 
 
 const saltRounds = 12;

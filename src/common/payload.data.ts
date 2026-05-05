@@ -1,6 +1,6 @@
 // response.helper.ts
 
-import MetadataDto from 'src/dto/metadata.dto';
+import MetadataDto from 'src/common/dto/metadata.dto';
 
 
 export class ResponseDto {
