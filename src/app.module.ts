@@ -11,6 +11,7 @@ import { ConfigModule } from '@nestjs/config';
 import { CookiesModule } from './modules/cookies/cookies.module';
 import { SharedModule } from './modules/shared/shared.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AuthModule } from './modules/auth/auth.module';
     CookiesModule, 
     SharedModule,
     AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
