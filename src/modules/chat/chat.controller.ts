@@ -1,6 +1,7 @@
 import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { ChatRequestDto } from './dto/chat-request.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 
 @Controller('chat')
@@ -8,6 +9,7 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Post('message')
+  @ApiBearerAuth()
   async handleChat(@Body() chatRequest: ChatRequestDto) {
     try {
       const { sessionId, message } = chatRequest;

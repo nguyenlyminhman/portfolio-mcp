@@ -18,11 +18,7 @@ export class AuthService {
     try {
 
       const user: any = await this.db.users.findUnique({where :{ email: loginData.username}});
-      console.log('user', user);
-      
       if (!user) {
-        console.log('o o o o ', user);
-        
         throw new Error('Invalid user');
       }
 
