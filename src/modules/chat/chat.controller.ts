@@ -1,12 +1,23 @@
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpException, HttpStatus, Sse, MessageEvent } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { ChatRequestDto } from './dto/chat-request.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { EApiPath, VERSION_1 } from 'src/objects/enum/EApiPath.enum';
+import { Observable } from 'rxjs';
 
 
-@Controller('chat')
+@ApiTags('Chat')
+@Controller({ path: EApiPath.CHAT, version: VERSION_1 })
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
+
+  @Sse('/stream')
+  chatStream(@Body() chatRequest: ChatRequestDto): Observable<MessageEvent> {
+    return this.chatService.chatStream(
+      chatRequest.sessionId,
+      chatRequest.message,
+    );
+  }
 
   @Post('message')
   @ApiBearerAuth()
