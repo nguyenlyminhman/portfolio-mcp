@@ -4,4 +4,5 @@ export enum EApiPath {
     AUTH = '/auth',
     MESSAGE = '/message',
     COOKIES = '/cookies',
+    USER = '/user'
 }
