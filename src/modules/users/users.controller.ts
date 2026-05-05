@@ -6,7 +6,7 @@ import { ResponseApi } from 'src/common/response.helper';
 import { ResponseDto } from 'src/common/payload.data';
 import { EApiPath, VERSION_1 } from 'src/objects/enum/EApiPath.enum';
 import { Public } from 'src/decorator/public.decorator';
-import { User } from 'src/decorator/user.decorator';
+import { CurrentUser } from 'src/decorator/user.decorator';
 
 @ApiTags('User')
 @Controller({ path: EApiPath.USER, version: VERSION_1 })
@@ -17,7 +17,7 @@ export class UsersController {
   @Public()
   @Post("/create")
   @HttpCode(HttpStatus.OK)
-  async creatUser(@User() user: any, @Body() usersCreateDto: UsersCreateDto): Promise<ResponseApi> {
+  async creatUser(@CurrentUser() user: any, @Body() usersCreateDto: UsersCreateDto): Promise<ResponseApi> {
       const data: ResponseDto = await this.usersService.create(usersCreateDto);
 
       return ResponseApi.success(data, 'create success', HttpStatus.ACCEPTED);
