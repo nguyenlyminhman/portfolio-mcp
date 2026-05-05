@@ -76,6 +76,8 @@ model projects {
   sort_order  Int?      @default(0)
   created_at  DateTime? @db.Timestamp(6)
   updated_at  DateTime? @db.Timestamp(6)
+
+  @@index([sort_order(sort: Desc)], map: "idx_projects_feature_order")
 }
 
 enum message_role {

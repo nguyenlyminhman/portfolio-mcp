@@ -5,7 +5,7 @@ import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express
 import { join } from 'path';
 import { LoggingInterceptor } from './interceptor/logging.interceptor';
 import { ValidationPipe } from '@nestjs/common';
-import * as morgan from 'morgan';
+import morgan from 'morgan';
 import helmet from 'helmet';
 import { SharedModule } from './modules/shared/shared.module';
 import { ServerConfigService } from './modules/shared/server-config.service';
@@ -44,7 +44,7 @@ async function bootstrap(): Promise<NestExpressApplication> {
       },
     }),
   );
-  app.use(morgan('combined'));
+  app.use(morgan(serverConfig.nodeEnv === 'production' ? 'combined' : 'dev'));
   app.enableVersioning();
   // Microservice config here
 
