@@ -10,6 +10,7 @@ import { McpChatHistoryModule } from './modules/mcp-chat-history/mcp-chat-histor
 import { ConfigModule } from '@nestjs/config';
 import { CookiesModule } from './modules/cookies/cookies.module';
 import { SharedModule } from './modules/shared/shared.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -25,7 +26,10 @@ import { SharedModule } from './modules/shared/shared.module';
     DbConnectModule, 
     McpCvModule, 
     McpGithubModule, 
-    McpChatHistoryModule, CookiesModule, SharedModule
+    McpChatHistoryModule, 
+    CookiesModule, 
+    SharedModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
