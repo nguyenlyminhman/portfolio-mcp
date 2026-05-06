@@ -7,7 +7,7 @@ import { ResponseDto } from 'src/common/payload.data';
 import { Public } from 'src/decorator/public.decorator';
 import { EApiPath, VERSION_1 } from 'src/objects/enum/EApiPath.enum';
 
-@ApiTags('Authentication')
+@ApiTags('Auth')
 @Controller({ path: EApiPath.AUTH, version: VERSION_1 })
 export class AuthController {
   constructor(
