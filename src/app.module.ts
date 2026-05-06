@@ -13,6 +13,7 @@ import { SharedModule } from './modules/shared/shared.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ConversationModule } from './modules/conversation/conversation.module';
+import { HrSessionModule } from './modules/hr-session/hr-session.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ConversationModule } from './modules/conversation/conversation.module';
     AuthModule,
     UsersModule,
     ConversationModule,
+    HrSessionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
