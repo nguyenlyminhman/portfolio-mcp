@@ -5,5 +5,6 @@ export enum EApiPath {
     MESSAGE = '/message',
     COOKIES = '/cookies',
     USER = '/user',
-    CHAT = '/chat'
+    CHAT = '/chat',
+    HR_SESSION = '/hr-session',
 }
