@@ -55,7 +55,7 @@ model my_cv {
 }
 
 model users {
-  id         String    @id(map: "newtable_pk") @db.Uuid
+  id         String    @id(map: "users_pk") @db.Uuid
   nickname   String?
   password   String
   email      String    @unique(map: "users_unique")
