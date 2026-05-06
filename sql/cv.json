@@ -1,0 +1,272 @@
+{
+  "title": "Senior Full Stack Software Engineer",
+  "contact": {
+    "email": "nguyenlyminhman@gmail.com",
+    "phone": "+84 988 226 112",
+    "github": "https://github.com/nguyenlyminhman",
+    "address": "102 Bùi Văn Ba, District 7, Ho Chi Minh City, Vietnam",
+    "linkedin": "https://www.linkedin.com/in/ly-minh-man-nguyen-204039147/"
+  },
+  "summary": "Senior Full Stack Software Engineer with 8+ years of experience building and scaling financial systems, CMS platforms, and microservice-based applications. Strong expertise in Java (Spring Boot) and Node.js (NestJS) with hands-on experience across frontend frameworks including React, Next.js, and Vue.js. Proven track record in delivering production-ready systems, leading backend teams, and optimizing performance, reliability, and development workflows. Comfortable working in remote, cross-functional, and international teams, with a strong focus on clean architecture, scalability, and business impact. Currently exploring AI-driven systems, building chatbot solutions with Large Language Models (LLMs) and Model Context Protocol (MCP) to enhance product intelligence.",
+  "education": [
+    {
+      "year": 2018,
+      "institution": "FPT - Greenwich University"
+    },
+    {
+      "year": 2011,
+      "institution": "Aptech International Training Program"
+    }
+  ],
+  "full_name": "Nguyễn Lý Minh Mẫn",
+  "languages": [
+    {
+      "level": "Communication at work",
+      "language": "English"
+    },
+    {
+      "level": "JLPT N4",
+      "language": "Japanese"
+    }
+  ],
+  "work_style": [
+    "Comfortable with async communication and remote collaboration",
+    "Experience working with distributed teams",
+    "Use AI tools like ChatGPT and Copilot for debugging, refactoring, and documentation"
+  ],
+  "technical_skills": {
+    "qa_tools": [
+      "JIRA",
+      "Redmine",
+      "MS Planner"
+    ],
+    "databases": [
+      "Oracle",
+      "PostgreSQL",
+      "Redis",
+      "MongoDB"
+    ],
+    "devops_cloud": [
+      "Docker",
+      "Kubernetes",
+      "CI/CD with Jenkins",
+      "GitHub Actions",
+      "AWS (foundational experience)"
+    ],
+    "architecture_backend": [
+      "Domain-Driven Design (DDD)",
+      "Test-Driven Development (TDD)",
+      "Clean Architecture",
+      "Microservices",
+      "RESTful APIs",
+      "GraphQL",
+      "Message Queues (ActiveMQ, RabbitMQ)",
+      "Authentication & Authorization",
+      "RBAC",
+      "ORM (JPA, Hibernate, MyBatis, Prisma, TypeORM)"
+    ],
+    "engineering_practices": [
+      "System design",
+      "Performance optimization",
+      "Code review",
+      "Estimation",
+      "Task breakdown",
+      "Agile/Scrum collaboration"
+    ],
+    "programming_languages": [
+      "Java (Spring Boot)",
+      "TypeScript",
+      "JavaScript",
+      "Node.js (NestJS, Express)",
+      "Python (FastAPI)",
+      "ReactJS",
+      "Next.js",
+      "Vue.js"
+    ]
+  },
+  "professional_experience": [
+    {
+      "company": "MIRAE ASSET FINANCE COMPANY",
+      "duration": "Apr 2024 – Now",
+      "position": "Senior Software Engineer (Full Stack)",
+      "projects": [
+        {
+          "name": "DMS",
+          "tech_stack": [
+            "Java (Spring Boot)",
+            "ReactJS",
+            "Oracle"
+          ],
+          "description": "A financial platform automating fund disbursement to dealers via banking APIs.",
+          "responsibilities": [
+            "Developed and maintained secure backend APIs handling financial transactions",
+            "Implemented new business features across Spring Boot backend and Vue.js frontend",
+            "Improved system stability and maintainability through refactoring and bug fixes",
+            "Worked closely with business stakeholders to translate requirements into production features"
+          ]
+        },
+        {
+          "name": "C&C",
+          "tech_stack": [
+            "Java (Spring Boot)",
+            "ReactJS",
+            "Oracle",
+            "ActiveMQ",
+            "AWS S3"
+          ],
+          "description": "A microservice-based platform for evaluating customer eligibility for credit card issuance.",
+          "responsibilities": [
+            "Built and maintained microservices using Spring framework",
+            "Integrated ActiveMQ for asynchronous processing",
+            "Delivered new backend and frontend features with React",
+            "Collaborated with a small cross-functional team in Agile environment"
+          ]
+        }
+      ]
+    },
+    {
+      "company": "TERRALOGIC VIETNAM",
+      "duration": "Nov 2022 – Mar 2024",
+      "position": "Senior Software Engineer / Backend Team Lead",
+      "projects": [
+        {
+          "name": "VPS Revamp",
+          "tech_stack": [
+            "Node.js (NestJS)",
+            "ReactJS (Next.js, RTK)",
+            "PostgreSQL"
+          ],
+          "description": "A CMS platform similar to WordPress for building dynamic content.",
+          "responsibilities": [
+            "Developed scalable backend APIs serving CMS features",
+            "Implemented frontend features using Next.js and React Toolkit",
+            "Maintained code quality and performance",
+            "Collaborated with designers and frontend engineers"
+          ]
+        },
+        {
+          "name": "ClickScan",
+          "tech_stack": [
+            "Node.js (NestJS)",
+            "ReactJS (Next.js, RTK)",
+            "MySQL"
+          ],
+          "description": "A web application for managing PDF and JPG user documents.",
+          "responsibilities": [
+            "Led backend team of 4 engineers",
+            "Conducted sprint planning, code reviews, mentoring",
+            "Designed and implemented core backend services",
+            "Improved reliability during migration from desktop to web"
+          ]
+        }
+      ]
+    },
+    {
+      "company": "OLLI TECHNOLOGY",
+      "duration": "Jun 2022 – Oct 2022",
+      "position": "Full Stack Software Engineer",
+      "projects": [
+        {
+          "name": "Skills Management Platform (MAIKA Assistant)",
+          "tech_stack": [
+            "Node.js (NestJS)",
+            "Python",
+            "ReactJS",
+            "PostgreSQL",
+            "Redis",
+            "Kubernetes",
+            "Docker"
+          ],
+          "description": "A CMS for managing smart speaker voice assistant skills.",
+          "responsibilities": [
+            "Built CMS features for customers",
+            "Developed backend APIs and frontend integration",
+            "Worked directly with stakeholders for fast delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "company": "CYBERLOGITEC VIETNAM",
+      "duration": "July 2019 – Mar 2022",
+      "position": "Full Stack Software Engineer",
+      "projects": [
+        {
+          "name": "Facial Recognition Management System",
+          "tech_stack": [
+            "Node.js (NestJS)",
+            "Vue.js",
+            "MongoDB"
+          ],
+          "description": "A CMS for managing employee attendance using face recognition.",
+          "responsibilities": [
+            "Developed attendance management platform",
+            "Built backend APIs and frontend UI",
+            "Participated in system design and release planning"
+          ]
+        },
+        {
+          "name": "Loan Center",
+          "tech_stack": [
+            "Java (Spring Boot)",
+            "React Native",
+            "MySQL"
+          ],
+          "description": "Android app for product lookup and contract creation.",
+          "responsibilities": [
+            "Developed backend services",
+            "Built mobile UI features"
+          ]
+        },
+        {
+          "name": "DRS Portal",
+          "tech_stack": [
+            "Java (Spring Boot)",
+            "MyBatis",
+            "Vue.js",
+            "Oracle"
+          ],
+          "description": "Tool for checking customer payment information.",
+          "responsibilities": [
+            "Built backend APIs",
+            "Ensured system reliability"
+          ]
+        }
+      ]
+    },
+    {
+      "company": "SPLUS SOFTWARE JSC",
+      "duration": "Jun 2018 – Jun 2019",
+      "position": "Backend Developer",
+      "projects": [
+        {
+          "name": "Digital Banking System",
+          "tech_stack": [
+            "Java (Spring Boot)",
+            "Oracle"
+          ],
+          "description": "Tool for checking and creating customer information.",
+          "responsibilities": [
+            "Developed backend APIs",
+            "Prepared APIs for frontend integration"
+          ]
+        },
+        {
+          "name": "Theater Management System",
+          "tech_stack": [
+            "Java (Spring Boot)",
+            "JSP",
+            "HTML",
+            "CSS",
+            "Oracle"
+          ],
+          "description": "Website for booking movie tickets.",
+          "responsibilities": [
+            "Implemented backend booking workflows",
+            "Developed required features"
+          ]
+        }
+      ]
+    }
+  ]
+}

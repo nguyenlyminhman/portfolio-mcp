@@ -15,8 +15,8 @@ export class UsersController {
   constructor(readonly usersService: UsersService) { }
 
   @Public()
-  @Post("/create")
   @HttpCode(HttpStatus.OK)
+  @Post("/create")
   async creatUser(@CurrentUser() user: any, @Body() usersCreateDto: UsersCreateDto): Promise<ResponseApi> {
       const data: ResponseDto = await this.usersService.create(usersCreateDto);
 

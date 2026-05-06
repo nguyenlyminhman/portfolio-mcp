@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Res } from '@nestjs/common';
+import { Controller, Post, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { EApiPath, VERSION_1 } from 'src/objects/enum/EApiPath.enum';
-import { v4 as uuidv4 } from 'uuid';
 import { Response } from 'express';
 import { CookiesService } from './cookies.service';
+import { Public } from 'src/decorator/public.decorator';
 
 
 @ApiTags('Cookies')
@@ -13,6 +13,7 @@ export class CookiesController {
         private readonly cookiesService: CookiesService,
     ) { }
 
+    @Public()
     @Post('/init')
     async initSession(@Res({ passthrough: true }) response: Response) {
         const sessionId = await this.cookiesService.createSessionId();
