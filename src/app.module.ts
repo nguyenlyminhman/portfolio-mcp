@@ -12,6 +12,7 @@ import { CookiesModule } from './modules/cookies/cookies.module';
 import { SharedModule } from './modules/shared/shared.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { ConversationModule } from './modules/conversation/conversation.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { UsersModule } from './modules/users/users.module';
     SharedModule,
     AuthModule,
     UsersModule,
+    ConversationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
