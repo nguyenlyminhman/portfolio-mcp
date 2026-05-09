@@ -14,6 +14,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ConversationModule } from './modules/conversation/conversation.module';
 import { HrSessionModule } from './modules/hr-session/hr-session.module';
+import { McpHrModule } from './modules/mcp-hr/mcp-hr.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { HrSessionModule } from './modules/hr-session/hr-session.module';
     UsersModule,
     ConversationModule,
     HrSessionModule,
+    McpHrModule,
   ],
   controllers: [AppController],
   providers: [AppService],

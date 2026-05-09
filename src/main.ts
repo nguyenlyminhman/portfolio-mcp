@@ -11,13 +11,14 @@ import { SharedModule } from './modules/shared/shared.module';
 import { ServerConfigService } from './modules/shared/server-config.service';
 import { SwaggerConfig } from './config/swagger';
 import { GlobalExceptionFilter } from './filter/global.exception.filter';
+import cookieParser from 'cookie-parser';
 
 
 async function bootstrap(): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
     new ExpressAdapter(),
-    { cors: true }
+    // { cors: true }
   );
 
   const serverConfig = app.select(SharedModule).get(ServerConfigService);
@@ -25,15 +26,17 @@ async function bootstrap(): Promise<NestExpressApplication> {
 
   app.useStaticAssets(join(__dirname, '..', 'public'));
   app.use(helmet());
+  app.use(cookieParser()); // Thêm middleware cookie-parser
 
   app.useGlobalInterceptors(new LoggingInterceptor());
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   app.enableCors({
     // Thay bằng domain chính xác của bạn, không dùng '*'
-    origin: ['http://localhost:3001', 'http://localhost:3001/documentation'],
+    origin:  'http://localhost:3000',
     credentials: true, // Cho phép nhận và gửi Cookie
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
   app.setGlobalPrefix('/api');

@@ -67,7 +67,7 @@ export class ChatService {
 
                     // 3. Khởi tạo model + chat session
                     const model = this.genAI.getGenerativeModel({
-                        model: 'gemini-2.0-flash',
+                        model: 'gemini-2.5-flash',
                         systemInstruction: `${SYSTEM_PROMPT}\n\n${contextBlock}`,
                     });
 
@@ -85,7 +85,7 @@ export class ChatService {
                         const text = chunk.text();
                         if (text) {
                             fullReply += text;
-                            subscriber.next({ data: { chunk: text } }); // frontend nhận từng chữ
+                            subscriber.next({ data: { chunk: text } }); // frontend nhận từng chữ\
                         }
                     }
 
@@ -95,7 +95,22 @@ export class ChatService {
 
                     subscriber.complete();
                 } catch (err) {
-                    subscriber.error(err);
+                    // Gửi thông báo lỗi cụ thể về cho UI thay vì chỉ crash stream
+                    let errorMessage = `Manny đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡"`;
+
+                    // Check lỗi Rate Limit từ Gemini
+                    if (err.status === 429 || err.message?.includes('429')) {
+                        errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Mẫn thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡ "`;
+                    }
+
+                    for await (const chunk of errorMessage) {
+                        const text = chunk.toString();
+                        if (text) {
+                            subscriber.next({ data: { error: true, message: errorMessage } }); // frontend nhận từng chữ
+                        }
+                    }
+
+                    subscriber.complete(); // Đóng stream một cách chủ động
                 }
             })();
         });
@@ -125,7 +140,7 @@ export class ChatService {
 
         return { chatHistory, contextBlock };
     }
-
+    //MessageEvent {isTrusted: true, data: '[GoogleGenerativeAI Error]: Error fetching from ht…://ai.google.dev/gemini-api/docs/billing#prepay. ', origin: 'http://localhost:3001', lastEventId: '1', source: null, …}_
     private async callGemini(params: {
         userMessage: string;
         history: { role: string; content: string }[];
@@ -137,7 +152,7 @@ export class ChatService {
         const { chatHistory, contextBlock } = this.buildContext({ history, cv, repos });
 
         const model = this.genAI.getGenerativeModel({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-2.5-flash',
             systemInstruction: `${SYSTEM_PROMPT}\n\n${contextBlock}`,
         });
 

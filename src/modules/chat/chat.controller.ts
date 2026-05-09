@@ -1,10 +1,11 @@
-import { Controller, Post, Body, Sse, MessageEvent } from '@nestjs/common';
+import { Controller, Post, Body, Sse, MessageEvent, Query, Req } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { ChatRequestDto } from './dto/chat-request.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { EApiPath, VERSION_1 } from 'src/objects/enum/EApiPath.enum';
 import { Observable } from 'rxjs';
 import { Public } from 'src/decorator/public.decorator';
+import { Request } from 'express';
 
 @ApiTags('Chat')
 @Controller({ path: EApiPath.CHAT, version: VERSION_1 })
@@ -13,10 +14,14 @@ export class ChatController {
 
   @Public()
   @Sse('/stream')
-  chatStream(@Body() chatRequest: ChatRequestDto): Observable<MessageEvent> {
+  chatStream( @Query('message') message: string, @Req() req: Request ): Observable<MessageEvent> {
+    const sessionId = req.cookies['chat_session_id'] || 'anonymous';
+    console.log(`Received streaming chat request with sessionId: ${sessionId} and message: ${message}`);
+    
+
     return this.chatService.chatStream(
-      chatRequest.sessionId,
-      chatRequest.message,
+      sessionId,
+      message,
     );
   }
 

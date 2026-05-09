@@ -1,18 +1,21 @@
 import { Module } from '@nestjs/common';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
-import { McpCvModule } from '../mcp-cv/mcp-cv.module';
-import { McpGithubModule } from '../mcp-github/mcp-github.module';
-import { McpChatHistoryModule } from '../mcp-chat-history/mcp-chat-history.module';
+import { McpCvService } from '../mcp-cv/mcp-cv.service';
+import { McpChatHistoryService } from '../mcp-chat-history/mcp-chat-history.service';
+import { McpGithubService } from '../mcp-github/mcp-github.service';
+import { DbConnectService } from '../db-connect/db-connect.service';
 
 @Module({
-  imports: [
-    McpCvModule,
-    McpGithubModule,
-    McpChatHistoryModule,
-  ],
+  imports: [ ],
   controllers: [ChatController],
-  providers: [ChatService],
+  providers: [
+    DbConnectService,
+    ChatService,
+    McpCvService,
+    McpGithubService,
+    McpChatHistoryService
+  ],
   exports: [ChatService],
 })
 export class ChatModule {}
