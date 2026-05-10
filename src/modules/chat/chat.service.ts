@@ -5,6 +5,7 @@ import { MessageEvent } from '@nestjs/common';
 import { McpCvService } from '../mcp-cv/mcp-cv.service';
 import { McpGithubService } from '../mcp-github/mcp-github.service';
 import { McpChatHistoryService } from '../mcp-chat-history/mcp-chat-history.service';
+import { ResponseDto } from 'src/common/payload.data';
 
 const SYSTEM_PROMPT = `
 Bạn là trợ lý ảo đại diện cho Nguyễn Lý Minh Mẫn — một Senior Full Stack Software Engineer với hơn 8 năm kinh nghiệm.
@@ -175,5 +176,20 @@ export class ChatService {
 
     const result = await chatSession.sendMessage(userMessage);
     return result.response.text();
+  }
+
+  async fetchChatHistory(sessionId: string): Promise<ResponseDto> {
+    const responseDto = new ResponseDto();
+
+    try {
+      const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
+      const history = await this.historyMcp.getHistory(conversation.id);
+
+      responseDto.data =  history; 
+    } catch (error) {
+      responseDto.data = { history: [] };
+    }
+
+    return responseDto;
   }
 }
