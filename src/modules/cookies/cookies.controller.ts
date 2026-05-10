@@ -19,6 +19,7 @@ export class CookiesController {
         const sessionId = await this.cookiesService.createSessionId();
 
         response.cookie('chat_session_id', sessionId, {
+            path: '/',
             httpOnly: true,
             secure: true,
             sameSite: 'lax',

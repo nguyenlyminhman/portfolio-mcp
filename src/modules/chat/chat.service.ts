@@ -100,7 +100,7 @@ export class ChatService {
 
                     // Check lỗi Rate Limit từ Gemini
                     if (err.status === 429 || err.message?.includes('429')) {
-                        errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Mẫn thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡ "`;
+                        errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Mẫn thì vô biên. \nTiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡ "`;
                     }
 
                     for await (const chunk of errorMessage) {
