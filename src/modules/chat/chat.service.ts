@@ -22,108 +22,117 @@ Nguyên tắc khi trả lời:
 
 @Injectable()
 export class ChatService {
-    private genAI: GoogleGenerativeAI;
+  private genAI: GoogleGenerativeAI;
 
-    constructor(
-        private readonly cvMcp: McpCvService,
-        private readonly githubMcp: McpGithubService,
-        private readonly historyMcp: McpChatHistoryService,
-    ) {
-        this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
-    }
+  constructor(
+    private readonly cvMcp: McpCvService,
+    private readonly githubMcp: McpGithubService,
+    private readonly historyMcp: McpChatHistoryService,
+  ) {
+    this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
+  }
 
-    async chat(sessionId: string, userMessage: string): Promise<string> {
-        const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
-        await this.historyMcp.saveMessage(conversation.id, 'hr', userMessage);
+  async chat(sessionId: string, userMessage: string): Promise<string> {
+    const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
+    await this.historyMcp.saveMessage(conversation.id, 'hr', userMessage);
 
-        const [history, cv, repos] = await Promise.all([
+    const [history, cv, repos] = await Promise.all([
+      this.historyMcp.getHistory(conversation.id),
+      this.cvMcp.getCv(),
+      this.githubMcp.listRepos(),
+    ]);
+
+    const reply = await this.callGemini({ userMessage, history, cv, repos });
+    await this.historyMcp.saveMessage(conversation.id, 'bot', reply);
+
+    return reply;
+  }
+
+  chatStream(sessionId: string, userMessage: string): Observable<MessageEvent> {
+    return new Observable<MessageEvent>((subscriber) => {
+      (async () => {
+        let fullReply = '';
+        let conversationId = '';
+        try {
+          // 1. Lấy context
+          const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
+          conversationId = conversation.id;
+
+          await this.historyMcp.saveMessage(conversation.id, 'hr', userMessage);
+
+          const [history, cv, repos] = await Promise.all([
             this.historyMcp.getHistory(conversation.id),
             this.cvMcp.getCv(),
             this.githubMcp.listRepos(),
-        ]);
+          ]);
 
-        const reply = await this.callGemini({ userMessage, history, cv, repos });
-        await this.historyMcp.saveMessage(conversation.id, 'bot', reply);
+          // 2. Build context
+          const { chatHistory, contextBlock } = this.buildContext({ history, cv, repos });
 
-        return reply;
-    }
+          // 3. Khởi tạo model + chat session
+          const model = this.genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            systemInstruction: `${SYSTEM_PROMPT}\n\n${contextBlock}`,
+          });
 
-    chatStream(sessionId: string, userMessage: string): Observable<MessageEvent> {
-        return new Observable<MessageEvent>((subscriber) => {
-            (async () => {
-                try {
-                    // 1. Lấy context
-                    const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
-                    await this.historyMcp.saveMessage(conversation.id, 'hr', userMessage);
+          const chatSession = model.startChat({
+            history: chatHistory,
+            generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
+          });
 
-                    const [history, cv, repos] = await Promise.all([
-                        this.historyMcp.getHistory(conversation.id),
-                        this.cvMcp.getCv(),
-                        this.githubMcp.listRepos(),
-                    ]);
+          // 4. Stream từng chunk về client
+          const result = await chatSession.sendMessageStream(userMessage);
 
-                    // 2. Build context
-                    const { chatHistory, contextBlock } = this.buildContext({ history, cv, repos });
+          for await (const chunk of result.stream) {
+            const text = chunk.text();
+            if (text) {
+              fullReply += text;
+              subscriber.next({ data: { chunk: text } }); // frontend nhận từng chữ\
+            }
+          }
 
-                    // 3. Khởi tạo model + chat session
-                    const model = this.genAI.getGenerativeModel({
-                        model: 'gemini-2.5-flash',
-                        systemInstruction: `${SYSTEM_PROMPT}\n\n${contextBlock}`,
-                    });
+          // 5. Báo done + lưu full reply
+          subscriber.next({ data: { done: true, fullReply } });
+          // await this.historyMcp.saveMessage(conversation.id, 'bot', fullReply);
 
-                    const chatSession = model.startChat({
-                        history: chatHistory,
-                        generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
-                    });
+          subscriber.complete();
+        } catch (err) {
+          // Gửi thông báo lỗi cụ thể về cho UI thay vì chỉ crash stream
+          let errorMessage = `Manny đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡
 
-                    // 4. Stream từng chunk về client
-                    const result = await chatSession.sendMessageStream(userMessage);
+                    Manny is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
 
-                    let fullReply = '';
+          // Check lỗi Rate Limit từ Gemini
+          if (err.status === 429 || err.message?.includes('429')) {
+            errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Mẫn thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡ 
 
-                    for await (const chunk of result.stream) {
-                        const text = chunk.text();
-                        if (text) {
-                            fullReply += text;
-                            subscriber.next({ data: { chunk: text } }); // frontend nhận từng chữ\
-                        }
-                    }
+                    The Free Tier's resources have their limits, but Mẫn’s welcome is infinite. Too bad the API requests keep me from talking too fast. Hang with me for a minute! ⚡`;
+          }
 
-                    // 5. Báo done + lưu full reply
-                    subscriber.next({ data: { done: true, fullReply } });
-                    await this.historyMcp.saveMessage(conversation.id, 'bot', fullReply);
+          for await (const chunk of errorMessage) {
+            const text = chunk;
+            if (text) {
+              fullReply += text;
+              subscriber.next({ data: { error: true, message: errorMessage } }); // frontend nhận từng chữ
+            }
+          }
 
-                    subscriber.complete();
-                } catch (err) {
-                    // Gửi thông báo lỗi cụ thể về cho UI thay vì chỉ crash stream
-                    let errorMessage = `Manny đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡"`;
+          subscriber.complete(); // Đóng stream một cách chủ động
+        } finally {
+          await this.historyMcp.saveMessage(conversationId, 'bot', fullReply);
+        }
+      })();
+    });
+  }
 
-                    // Check lỗi Rate Limit từ Gemini
-                    if (err.status === 429 || err.message?.includes('429')) {
-                        errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Mẫn thì vô biên. \nTiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡ "`;
-                    }
+  private buildContext(params: {
+    history: { role: string; content: string }[];
+    cv: object | null;
+    repos: object[];
+  }) {
+    const { history, cv, repos } = params;
 
-                    for await (const chunk of errorMessage) {
-                        const text = chunk.toString();
-                        if (text) {
-                            subscriber.next({ data: { error: true, message: errorMessage } }); // frontend nhận từng chữ
-                        }
-                    }
-
-                    subscriber.complete(); // Đóng stream một cách chủ động
-                }
-            })();
-        });
-    }
-
-    private buildContext(params: {
-        history: { role: string; content: string }[];
-        cv: object | null;
-        repos: object[];
-    }) {
-        const { history, cv, repos } = params;
-
-        const contextBlock = `
+    const contextBlock = `
             <context>
                 <cv>
                     ${cv ? JSON.stringify(cv, null, 2) : 'Không có dữ liệu CV'}
@@ -133,38 +142,38 @@ export class ChatService {
                 </github_repos>
             </context>`.trim();
 
-        const chatHistory: Content[] = history.slice(0, -1).map((m) => ({
-            role: m.role === 'hr' ? 'user' : 'model',
-            parts: [{ text: m.content }],
-        }));
+    const chatHistory: Content[] = history.slice(0, -1).map((m) => ({
+      role: m.role === 'hr' ? 'user' : 'model',
+      parts: [{ text: m.content }],
+    }));
 
-        return { chatHistory, contextBlock };
-    }
-    //MessageEvent {isTrusted: true, data: '[GoogleGenerativeAI Error]: Error fetching from ht…://ai.google.dev/gemini-api/docs/billing#prepay. ', origin: 'http://localhost:3001', lastEventId: '1', source: null, …}_
-    private async callGemini(params: {
-        userMessage: string;
-        history: { role: string; content: string }[];
-        cv: object | null;
-        repos: object[];
-    }): Promise<string> {
-        const { userMessage, history, cv, repos } = params;
+    return { chatHistory, contextBlock };
+  }
+  //MessageEvent {isTrusted: true, data: '[GoogleGenerativeAI Error]: Error fetching from ht…://ai.google.dev/gemini-api/docs/billing#prepay. ', origin: 'http://localhost:3001', lastEventId: '1', source: null, …}_
+  private async callGemini(params: {
+    userMessage: string;
+    history: { role: string; content: string }[];
+    cv: object | null;
+    repos: object[];
+  }): Promise<string> {
+    const { userMessage, history, cv, repos } = params;
 
-        const { chatHistory, contextBlock } = this.buildContext({ history, cv, repos });
+    const { chatHistory, contextBlock } = this.buildContext({ history, cv, repos });
 
-        const model = this.genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash',
-            systemInstruction: `${SYSTEM_PROMPT}\n\n${contextBlock}`,
-        });
+    const model = this.genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      systemInstruction: `${SYSTEM_PROMPT}\n\n${contextBlock}`,
+    });
 
-        const chatSession = model.startChat({
-            history: chatHistory,
-            generationConfig: {
-                maxOutputTokens: 1024,
-                temperature: 0.2, // Giảm temperature để câu trả lời chính xác và ít bịa đặt hơn
-            },
-        });
+    const chatSession = model.startChat({
+      history: chatHistory,
+      generationConfig: {
+        maxOutputTokens: 1024,
+        temperature: 0.2, // Giảm temperature để câu trả lời chính xác và ít bịa đặt hơn
+      },
+    });
 
-        const result = await chatSession.sendMessage(userMessage);
-        return result.response.text();
-    }
+    const result = await chatSession.sendMessage(userMessage);
+    return result.response.text();
+  }
 }

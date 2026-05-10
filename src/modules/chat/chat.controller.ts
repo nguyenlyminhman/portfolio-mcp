@@ -15,9 +15,7 @@ export class ChatController {
   @Public()
   @Sse('/stream')
   chatStream( @Query('message') message: string, @Req() req: Request ): Observable<MessageEvent> {
-    const sessionId = req.cookies['chat_session_id'] || 'anonymous';
-    console.log(`Received streaming chat request with sessionId: ${sessionId} and message: ${message}`);
-    
+    const sessionId = req.cookies['chat_session_id'] || null;
 
     return this.chatService.chatStream(
       sessionId,
