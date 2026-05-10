@@ -58,7 +58,7 @@ export class McpChatHistoryService {
       where: { conversation_id: conversationId },
       orderBy: { created_at: 'desc' },
       take: limit,
-      select: { role: true, content: true, created_at: true },
+      select: { id: true, role: true, content: true },
     });
     return messages.reverse(); // cũ → mới
   }
