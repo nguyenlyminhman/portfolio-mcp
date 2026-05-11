@@ -97,7 +97,7 @@ export class ChatService {
           // await this.historyMcp.saveMessage(conversation.id, 'bot', fullReply);
 
           subscriber.complete();
-        } catch (err) {
+        } catch (err: any) {
           // Gửi thông báo lỗi cụ thể về cho UI thay vì chỉ crash stream
           let errorMessage = `Manny đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡
 

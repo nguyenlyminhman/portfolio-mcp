@@ -14,7 +14,10 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ConversationModule } from './modules/conversation/conversation.module';
 import { HrSessionModule } from './modules/hr-session/hr-session.module';
-import { McpHrModule } from './modules/mcp-hr/mcp-hr.module';
+// import { McpHrModule } from './modules/mcp-hr/mcp-hr.module';
+import { CmsModule } from './modules/cms/cms.module';
+import { CmsCvModule } from './modules/cms-cv/cms-cv.module';
+import { CmsRepoModule } from './modules/cms-repo/cms-repo.module';
 
 @Module({
   imports: [
@@ -37,7 +40,10 @@ import { McpHrModule } from './modules/mcp-hr/mcp-hr.module';
     UsersModule,
     ConversationModule,
     HrSessionModule,
-    McpHrModule,
+    // McpHrModule,
+    CmsModule,
+    CmsCvModule,
+    CmsRepoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
