@@ -52,6 +52,7 @@ model my_cv {
   created_by String?
   updated_at DateTime? @db.Timestamp(6)
   updated_by String?
+  is_active  Boolean?  @default(true)
 }
 
 model users {
@@ -78,6 +79,9 @@ model projects {
   sort_order  Int?      @default(0)
   created_at  DateTime? @db.Timestamp(6)
   updated_at  DateTime? @db.Timestamp(6)
+  created_by  String?
+  updated_by  String?
+  is_active   Boolean?  @default(true)
 
   @@index([sort_order(sort: Desc)], map: "idx_projects_feature_order")
 }
