@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsObject, IsString } from "class-validator";
+import { IsBoolean, IsObject, IsString } from "class-validator";
 
 export class CvUpdateDto {
 
@@ -16,4 +16,8 @@ export class CvUpdateDto {
   })
   @IsObject()
   content: any;
+
+  @ApiProperty()
+  @IsBoolean()
+  status: boolean;
 }

@@ -36,10 +36,10 @@ export class CmsCvController {
   @ApiBearerAuth()
   @Post('/update')
   async updateCv(@CurrentUser() user: any, @Body() cvUpdateDto: CvUpdateDto): Promise<ResponseApi> {
-    const { id, name, content } = cvUpdateDto;
+    const { id, name, content, status } = cvUpdateDto;
     const { email } = user;
 
-    const rs = await this.cmsCvService.updateCv(id, name, content, email);
+    const rs = await this.cmsCvService.updateCv(id, name, content, status, email);
     return ResponseApi.success(rs, 'Success', HttpStatus.OK);
   }
 }

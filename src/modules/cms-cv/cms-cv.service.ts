@@ -34,7 +34,7 @@ export class CmsCvService {
     return responseDto;
   }
 
-  async updateCv(id: string, name: string, content: string, email: string): Promise<ResponseDto> {
+  async updateCv(id: string, name: string, content: string, status: boolean, email: string): Promise<ResponseDto> {
     const responseDto = new ResponseDto();
     let rs = null;
     try {
@@ -42,6 +42,7 @@ export class CmsCvService {
         data: {
           name: name,
           cv_content: content,
+          is_active: status,
           updated_by: email,
           updated_at: new Date()
         },
