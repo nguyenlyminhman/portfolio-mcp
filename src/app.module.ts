@@ -12,12 +12,12 @@ import { CookiesModule } from './modules/cookies/cookies.module';
 import { SharedModule } from './modules/shared/shared.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
-import { ConversationModule } from './modules/conversation/conversation.module';
 import { HrSessionModule } from './modules/hr-session/hr-session.module';
 // import { McpHrModule } from './modules/mcp-hr/mcp-hr.module';
 import { CmsModule } from './modules/cms/cms.module';
 import { CmsCvModule } from './modules/cms-cv/cms-cv.module';
 import { CmsRepoModule } from './modules/cms-repo/cms-repo.module';
+import { CmsConversationModule } from './modules/cms-conversation/cms-conversation.module';
 
 @Module({
   imports: [
@@ -38,12 +38,12 @@ import { CmsRepoModule } from './modules/cms-repo/cms-repo.module';
     SharedModule,
     AuthModule,
     UsersModule,
-    ConversationModule,
     HrSessionModule,
     // McpHrModule,
     CmsModule,
     CmsCvModule,
     CmsRepoModule,
+    CmsConversationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

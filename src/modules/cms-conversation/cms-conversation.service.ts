@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { DbConnectService } from '../db-connect/db-connect.service';
 
 @Injectable()
-export class ConversationService {
+export class CmsConversationService {
     constructor(
         private readonly db: DbConnectService
     ) { }
