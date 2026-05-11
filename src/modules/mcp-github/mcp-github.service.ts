@@ -34,6 +34,7 @@ export class McpGithubService {
 
   private async fetchRepos() {
     const projects = await this.db.projects.findMany({
+      where: { is_active: true },
       orderBy: { sort_order: 'desc' },
       select: {
         repo_name: true,
@@ -58,7 +59,7 @@ export class McpGithubService {
 
   private async fetchRepoDetail(repoName: string) {
     const project = await this.db.projects.findFirst({
-      where: { repo_name: repoName },
+      where: { repo_name: repoName, is_active: true },
     });
 
     if (!project) {
@@ -126,7 +127,7 @@ export class McpGithubService {
       { repo: z.string().describe('Tên repo cần xem README') },
       async ({ repo }) => {
         const project = await this.db.projects.findFirst({
-          where: { repo_name: repo },
+          where: { repo_name: repo, is_active: true },
           select: { markdown: true },
         });
 
