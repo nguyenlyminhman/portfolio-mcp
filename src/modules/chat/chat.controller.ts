@@ -25,15 +25,6 @@ export class ChatController {
     );
   }
 
-  @ApiBearerAuth()
-  @Post('/message')
-  async handleChat(@Body() chatRequest: ChatRequestDto) {
-    const { sessionId, message } = chatRequest;
-    const reply = await this.chatService.chat(sessionId, message);
-    return {
-      success: true, data: { reply }
-    };
-  }
 
   @Public()
   @Get('/history')

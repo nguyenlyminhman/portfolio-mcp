@@ -69,7 +69,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('typing', { status: true });
 
       console.log(`[SocketGateway] Received message from client :`, sessionId, content);
-      const reply = await this.chatService.chat(sessionId, content);
+      const reply = await this.chatService.chatStream(sessionId, content);
 
       console.log('reply:', reply);
 

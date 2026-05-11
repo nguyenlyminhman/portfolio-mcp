@@ -13,7 +13,7 @@ export class HrSessionService {
       data: {
         id: uuidv4().toString(),
         cookie_token: sessionId,
-        user_agent: sessionId,
+        // user_agent: sessionId,
         ip_address: '',
         first_seen_at: new Date(),
         last_seen_at: new Date(),

@@ -5,6 +5,7 @@ import { McpCvService } from '../mcp-cv/mcp-cv.service';
 import { McpChatHistoryService } from '../mcp-chat-history/mcp-chat-history.service';
 import { McpGithubService } from '../mcp-github/mcp-github.service';
 import { DbConnectService } from '../db-connect/db-connect.service';
+import { McpHrService } from '../mcp-hr/mcp-hr.service';
 
 @Module({
   imports: [ ],
@@ -14,7 +15,8 @@ import { DbConnectService } from '../db-connect/db-connect.service';
     ChatService,
     McpCvService,
     McpGithubService,
-    McpChatHistoryService
+    McpChatHistoryService,
+    McpHrService
   ],
   exports: [ChatService],
 })
