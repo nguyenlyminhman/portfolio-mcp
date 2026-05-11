@@ -73,8 +73,8 @@ export class McpGithubService {
       markdown: project.markdown,
       github_url: project.github_url,
       live_url: project.live_url,
-      created_at: project.created_at,
-      updated_at: project.updated_at,
+      // created_at: project.created_at,
+      // updated_at: project.updated_at,
     };
   }
 
