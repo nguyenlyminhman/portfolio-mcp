@@ -32,6 +32,7 @@ export class McpCvService {
 
   private async fetchCv() {
     return this.db.my_cv.findFirst({
+      where: { is_active: true },
       orderBy: { updated_at: 'desc' },
       select: { name: true, cv_content: true },
     });
