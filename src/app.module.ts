@@ -17,7 +17,7 @@ import { HrSessionModule } from './modules/hr-session/hr-session.module';
 import { CmsModule } from './modules/cms/cms.module';
 import { CmsCvModule } from './modules/cms-cv/cms-cv.module';
 import { CmsRepoModule } from './modules/cms-repo/cms-repo.module';
-import { CmsConversationModule } from './modules/cms-conversation/cms-conversation.module';
+import { CmsConvModule } from './modules/cms-conv/cms-conv.module';
 
 @Module({
   imports: [
@@ -43,7 +43,7 @@ import { CmsConversationModule } from './modules/cms-conversation/cms-conversati
     CmsModule,
     CmsCvModule,
     CmsRepoModule,
-    CmsConversationModule,
+    CmsConvModule,
   ],
   controllers: [AppController],
   providers: [AppService],

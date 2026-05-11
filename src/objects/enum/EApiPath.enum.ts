@@ -9,5 +9,6 @@ export enum EApiPath {
     HR_SESSION = '/hr-session',
     CMS = '/cms',
     CMS_CV = '/cms/cv',
-    CMS_REPO = '/cms/repo'
+    CMS_REPO = '/cms/repo',
+    CMS_CONV = '/cms/conv'
 }

@@ -3,14 +3,14 @@ import { CookiesController } from './cookies.controller';
 import { CookiesService } from './cookies.service';
 import { DbConnectModule } from '../db-connect/db-connect.module';
 import { HrSessionService } from '../hr-session/hr-session.service';
-import { CmsConversationService } from '../cms-conversation/cms-conversation.service';
+import { CmsConvService } from '../cms-conv/cms-conv.service';
 
 @Module({
   imports: [DbConnectModule],
   controllers: [CookiesController],
   providers: [
     CookiesService, 
-    CmsConversationService,
+    CmsConvService,
     HrSessionService
   ],
 })
