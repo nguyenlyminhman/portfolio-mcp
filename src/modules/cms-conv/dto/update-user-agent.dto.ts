@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString } from "class-validator";
+import { IsBoolean, IsString } from "class-validator";
 
 export class UpdateUserAgentDto {
   @ApiProperty()
@@ -9,4 +9,8 @@ export class UpdateUserAgentDto {
   @ApiProperty()
   @IsString()
   userAgent: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  isInteresting: boolean;
 }

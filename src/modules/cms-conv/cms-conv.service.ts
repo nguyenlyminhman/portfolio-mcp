@@ -73,20 +73,21 @@ export class CmsConvService {
     return res;
   }
 
-  async updateUserAgent(id: string, userAgent: string, email: string): Promise<ResponseDto> {
+  async updateUserAgent(id: string, userAgent: string, isInteresting: boolean, email: string): Promise<ResponseDto> {
     const res = new ResponseDto();
     let rs = null;
     try {
-      await this.db.hr_sessions.update(
+      rs = await this.db.hr_sessions.update(
         {
           where: { id: id },
-          data: { user_agent: userAgent },
+          data: { user_agent: userAgent, is_interesting: isInteresting },
           select: { id: true }
         }
       );
 
       res.data = rs.id
     } catch (err: any) {
+      console.error(err)
       throw new Error('Fetch content failed')
     }
     return res;
