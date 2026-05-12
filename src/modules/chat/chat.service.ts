@@ -117,7 +117,7 @@ export class ChatService {
           }
 
           subscriber.next({ data: { done: true, fullReply } });
-          subscriber.complete();
+          
         } catch (err: any) {
           console.error('Error in chatStream:', err);
           let errorMessage = `Neko đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡\n Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
@@ -128,11 +128,10 @@ export class ChatService {
 
           fullReply = errorMessage;
           subscriber.next({ data: { error: true, message: errorMessage } });
-          subscriber.complete();
+          
         } finally {
-          if (conversationId) {
-            await this.historyMcp.saveMessage(conversationId, 'bot', fullReply);
-          }
+          await this.historyMcp.saveMessage(conversationId, 'bot', fullReply);
+          subscriber.complete();
         }
       })();
     });
