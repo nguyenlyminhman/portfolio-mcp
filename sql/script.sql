@@ -62,6 +62,7 @@ CREATE TABLE public.conversations (
 	last_message_at timestamp NOT NULL,
 	message_count int4 DEFAULT 0 NOT NULL,
 	token_count int4 DEFAULT 0 NOT NULL,
+	comment text NULL,
 	CONSTRAINT conversations_pk PRIMARY KEY (id)
 );
 
