@@ -66,7 +66,7 @@ const GREETING_PATTERNS = [
 
 @Injectable()
 export class McpHrService {
-  constructor(private readonly db: DbConnectService) {}
+  constructor(private readonly db: DbConnectService) { }
 
   // ── DB Helpers ─────────────────────────────────────────────────────────────
 
@@ -233,11 +233,10 @@ HƯỚNG DẪN — **BẮT BUỘC TUÂN THỦ**:
 - Chào lại thật tự nhiên, ấm áp.
 - **CHỈ hỏi tên HR** — TUYỆT ĐỐI KHÔNG hỏi công ty ở tin nhắn đầu tiên này.
 - Hỏi công ty là bước tiếp theo, sau khi đã biết tên.
-${
-  alreadyHasName
-    ? `- Mình đã biết tên HR là ${profile.name}. Chào bằng tên, rồi hỏi nhẹ về công ty.`
-    : `- Ví dụ câu trả lời: "Chào bạn! Mình là Neko 😊 Rất vui được gặp bạn. Cho mình hỏi bạn tên gì để mình tiện xưng hô nhé?"`
-}
+${alreadyHasName
+          ? `- Mình đã biết tên HR là ${profile.name}. Chào bằng tên, rồi hỏi nhẹ về công ty.`
+          : `- Ví dụ câu trả lời: "Chào bạn! Mình là Neko 😊 Rất vui được gặp bạn. Cho mình hỏi bạn tên gì để mình tiện xưng hô nhé?"`
+        }
 - Câu ngắn, thân thiện, KHÔNG formal, KHÔNG hỏi nhiều thứ cùng lúc.
       `.trim();
     }

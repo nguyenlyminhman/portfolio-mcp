@@ -51,11 +51,11 @@ export class ChatService {
 
         try {
           // 1. Lấy hoặc tạo conversation
-          const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
-          conversationId = conversation.id;
+          // const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
+          // conversationId = conversation.id;
 
           // 2. Lưu tin nhắn người dùng
-          await this.historyMcp.saveMessage(conversation.id, 'hr', userMessage);
+          await this.historyMcp.saveMessage(sessionId, 'hr', userMessage);
 
           // 3. Lấy HR context trước — có thể throw nếu session chưa tồn tại
           const hrCtx = await this.hrMcp.getSessionContext(sessionId).catch(() => null);
@@ -75,7 +75,7 @@ export class ChatService {
 
           // 6. Lấy song song history, CV, repos
           const [history, cv, repos] = await Promise.all([
-            this.historyMcp.getHistory(conversation.id),
+            this.historyMcp.getHistory(sessionId),
             this.cvMcp.getCv(),
             this.githubMcp.listRepos(),
           ]);
@@ -118,7 +118,7 @@ export class ChatService {
 
           subscriber.next({ data: { done: true, fullReply } });
           subscriber.complete();
-        } catch (err) {
+        } catch (err: any) {
           console.error('Error in chatStream:', err);
           let errorMessage = `Neko đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡\ n\ Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
 
@@ -143,8 +143,8 @@ export class ChatService {
   async fetchChatHistory(sessionId: string): Promise<ResponseDto> {
     const responseDto = new ResponseDto();
     try {
-      const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
-      responseDto.data = await this.historyMcp.getHistory(conversation.id);
+      // const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
+      responseDto.data = await this.historyMcp.getHistory(sessionId);
     } catch {
       responseDto.data = { history: [] };
     }

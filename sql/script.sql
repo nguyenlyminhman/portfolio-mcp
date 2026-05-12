@@ -27,6 +27,7 @@ CREATE TABLE public.my_cv (
 	created_by text NULL,
 	updated_at timestamp NULL,
 	updated_by text NULL,
+	is_active BOOLEAN DEFAULT TRUE,
 	CONSTRAINT my_cv_pk PRIMARY KEY (id)
 );
 
@@ -52,89 +53,21 @@ CREATE INDEX idx_hr_sessions_cookie ON hr_sessions (cookie_token);
 CREATE INDEX idx_hr_sessions_last_seen ON hr_sessions (last_seen_at DESC);
 
 -- ============================================================
--- 4. conversations
--- ============================================================
-CREATE TABLE public.conversations (
-	id uuid NOT NULL,
-	session_id uuid NOT NULL,
-	started_at timestamp NOT NULL,
-	last_message_at timestamp NOT NULL,
-	message_count int4 DEFAULT 0 NOT NULL,
-	CONSTRAINT conversations_pk PRIMARY KEY (id)
-);
-
-
--- Index: lấy conversation mới nhất của 1 session
-CREATE INDEX idx_conversations_session ON conversations (session_id, last_message_at DESC);
-
--- ============================================================
 -- 5. messages
 -- ============================================================
 CREATE TYPE message_role AS ENUM ('hr', 'bot');
 
-CREATE TABLE public.messages (
+CREATE TABLE messages (
 	id uuid NOT NULL,
 	conversation_id uuid NOT NULL,
 	"role" text NOT NULL,
 	"content" text NOT NULL,
-	created_at timestamp NOT null
+	created_at timestamp NOT null,
+	used_token int4 NULL,
 	CONSTRAINT messages_pk PRIMARY KEY (id)
 );
--- Index: load messages theo ngày (Admin scroll, chatbot lấy history)
-CREATE INDEX idx_messages_conversation_date ON messages (conversation_id, created_at DESC);
+CREATE INDEX idx_messages_conversation_date ON public.messages USING btree (conversation_id, created_at DESC);
 
--- ============================================================
--- 6. Function: tự động cập nhật updated_at cho my_cv
--- ============================================================
-CREATE OR REPLACE FUNCTION set_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_my_cv_updated_at
-  BEFORE UPDATE ON my_cv
-  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
--- ============================================================
--- 7. Function: sync last_message_at + message_count lên conversations
---    Tự động chạy mỗi khi INSERT 1 message mới
--- ============================================================
-CREATE OR REPLACE FUNCTION sync_conversation_stats()
-RETURNS TRIGGER AS $$
-BEGIN
-  UPDATE conversations
-  SET
-    last_message_at = NEW.created_at,
-    message_count   = message_count + 1
-  WHERE id = NEW.conversation_id;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_sync_conversation_stats
-  AFTER INSERT ON messages
-  FOR EACH ROW EXECUTE FUNCTION sync_conversation_stats();
-
--- ============================================================
--- 8. Function: sync last_seen_at lên hr_sessions
---    Tự động chạy mỗi khi có conversation mới
--- ============================================================
-CREATE OR REPLACE FUNCTION sync_session_last_seen()
-RETURNS TRIGGER AS $$
-BEGIN
-  UPDATE hr_sessions
-  SET last_seen_at = NEW.started_at
-  WHERE id = NEW.session_id;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_sync_session_last_seen
-  AFTER INSERT ON conversations
-  FOR EACH ROW EXECUTE FUNCTION sync_session_last_seen();
 
 CREATE TABLE projects (
     id  uuid NOT NULL,
@@ -148,9 +81,9 @@ CREATE TABLE projects (
     sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
+	is_active BOOLEAN DEFAULT TRUE,
     CONSTRAINT projects_pk PRIMARY KEY (id)
 );
 
 -- Tạo Index để AI query "những dự án tiêu biểu" nhanh hơn
 CREATE INDEX idx_projects_feature_order ON projects(sort_order DESC);
-

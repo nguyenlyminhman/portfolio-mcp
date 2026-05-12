@@ -8,17 +8,6 @@ datasource db {
   provider = "postgresql"
 }
 
-model conversations {
-  id              String   @id(map: "conversations_pk") @db.Uuid
-  session_id      String   @db.Uuid
-  started_at      DateTime @db.Timestamp(6)
-  last_message_at DateTime @db.Timestamp(6)
-  message_count   Int      @default(0)
-  token_count     Int?     @default(0)
-
-  @@index([session_id, last_message_at(sort: Desc)], map: "idx_conversations_session")
-}
-
 model hr_sessions {
   id             String    @id(map: "hr_sessions_pk") @db.Uuid
   cookie_token   String    @unique(map: "hr_sessions_unique")
@@ -56,7 +45,7 @@ model my_cv {
 }
 
 model users {
-  id         String    @id(map: "users_pk") @db.Uuid
+  id         String    @id(map: "newtable_pk") @db.Uuid
   nickname   String?
   password   String
   email      String    @unique(map: "users_unique")
@@ -82,8 +71,6 @@ model projects {
   created_by  String?
   updated_by  String?
   is_active   Boolean?  @default(true)
-
-  @@index([sort_order(sort: Desc)], map: "idx_projects_feature_order")
 }
 
 enum message_role {

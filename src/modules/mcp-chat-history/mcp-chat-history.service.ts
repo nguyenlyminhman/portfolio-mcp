@@ -23,34 +23,43 @@ export class McpChatHistoryService {
 
   // ─── Public methods (dùng bởi ChatService) ────────────────────────────────
 
-  async getOrCreateConversation(sessionId: string) {
-    let conversation = await this.db.conversations.findFirst({
-      where: { session_id: sessionId },
-      orderBy: { last_message_at: 'desc' },
-      select: { id: true, message_count: true, started_at: true },
-    });
+  // async getOrCreateConversation(sessionId: string) {
+  //   let conversation = await this.db.conversations.findFirst({
+  //     where: { session_id: sessionId },
+  //     orderBy: { last_message_at: 'desc' },
+  //     select: { id: true, message_count: true, started_at: true },
+  //   });
 
-    if (!conversation) {
-      conversation = await this.db.conversations.create({
-        data: { id: uuidv4(), session_id: sessionId, started_at: new Date(), last_message_at: new Date() },
-        select: { id: true, message_count: true, started_at: true },
+  //   if (!conversation) {
+  //     conversation = await this.db.conversations.create({
+  //       data: { id: uuidv4(), session_id: sessionId, started_at: new Date(), last_message_at: new Date() },
+  //       select: { id: true, message_count: true, started_at: true },
+  //     });
+  //   }
+
+  //   return conversation;
+  // }
+
+  async saveMessage(conversationId: string, role: 'hr' | 'bot', content: string) {
+    let rs = this.db.messages.findFirst({
+      where: { conversation_id: conversationId },
+      select: { id: true, role: true, created_at: true },
+    })
+
+    if (!rs) {
+      rs = this.db.messages.create({
+        data: {
+          id: uuidv4(),
+          conversation_id: conversationId,
+          role: role as message_role,
+          content,
+          created_at: new Date(),
+        },
+        select: { id: true, role: true, created_at: true },
       });
     }
 
-    return conversation;
-  }
-
-  async saveMessage(conversationId: string, role: 'hr' | 'bot', content: string) {
-    return this.db.messages.create({
-      data: {
-        id: uuidv4(),
-        conversation_id: conversationId,
-        role: role as message_role,
-        content,
-        created_at: new Date(),
-      },
-      select: { id: true, role: true, created_at: true },
-    });
+    return rs;
   }
 
   async getHistory(conversationId: string, limit = 20) {
@@ -66,22 +75,22 @@ export class McpChatHistoryService {
   // ─── Register Tools ───────────────────────────────────────────────────────
 
   private registerTools() {
-    this.registerGetOrCreateConversation();
+    // this.registerGetOrCreateConversation();
     this.registerSaveMessage();
     this.registerGetHistory();
   }
 
-  private registerGetOrCreateConversation() {
-    this.server.tool(
-      'get_or_create_conversation',
-      'Lấy conversation hiện tại hoặc tạo mới. Gọi đầu tiên khi HR gửi tin nhắn.',
-      { session_id: z.string().uuid() },
-      async ({ session_id }) => {
-        const conversation = await this.getOrCreateConversation(session_id);
-        return { content: [{ type: 'text', text: JSON.stringify(conversation, null, 2) }] };
-      },
-    );
-  }
+  // private registerGetOrCreateConversation() {
+  //   this.server.tool(
+  //     'get_or_create_conversation',
+  //     'Lấy conversation hiện tại hoặc tạo mới. Gọi đầu tiên khi HR gửi tin nhắn.',
+  //     { session_id: z.string().uuid() },
+  //     async ({ session_id }) => {
+  //       const conversation = await this.getOrCreateConversation(session_id);
+  //       return { content: [{ type: 'text', text: JSON.stringify(conversation, null, 2) }] };
+  //     },
+  //   );
+  // }
 
   private registerSaveMessage() {
     this.server.tool(

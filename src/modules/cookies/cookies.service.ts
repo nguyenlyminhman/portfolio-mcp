@@ -16,8 +16,9 @@ export class CookiesService {
     const rs = uuidv4().toString();
 
     await this.hrSessionService.createHrSessionId(rs);
-    await this.cmsConvService.createConversation(rs);
+    // await this.cmsConvService.createConversation(rs);
 
+    console.log(rs)
     return rs;
   }
 }

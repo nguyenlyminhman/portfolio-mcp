@@ -13,21 +13,21 @@ export class CmsConvService {
     const response = new ResponseDto();
     let rs = null;
     
-    try {
-      const sessions = await this.db.hr_sessions.findMany();
-      const conversations = await this.db.conversations.findMany();
+    // try {
+    //   const sessions = await this.db.hr_sessions.findMany({orderBy: { }});
+    //   const conversations = await this.db.conversations.findMany();
 
-      rs = sessions.map((s) => ({
-        ...s,
-        conversation: conversations.find(
-          (c) => c.session_id === s.cookie_token
-        ),
-      }));
-    } catch (err: any) {
-      throw new Error('Fetch conv failed')
-    }
+    //   rs = sessions.map((s) => ({
+    //     ...s,
+    //     conversation: conversations.find(
+    //       (c) => c.session_id === s.cookie_token
+    //     ),
+    //   }));
+    // } catch (err: any) {
+    //   throw new Error('Fetch conv failed')
+    // }
 
-    response.data = rs;
+    // response.data = rs;
 
     return response;
   }
@@ -54,19 +54,20 @@ export class CmsConvService {
   }
 
   async createConversation(sessionId: string): Promise<string> {
-    const rs = await this.db.conversations.create({
-      data: {
-        id: uuidv4(),
-        session_id: sessionId,
-        started_at: new Date(),
-        last_message_at: new Date(),
-        message_count: 0,
-      },
-      select: {
-        id: true,
-      }
-    });
+    // const rs = await this.db.conversations.create({
+    //   data: {
+    //     id: uuidv4(),
+    //     session_id: sessionId,
+    //     started_at: new Date(),
+    //     last_message_at: new Date(),
+    //     message_count: 0,
+    //   },
+    //   select: {
+    //     id: true,
+    //   }
+    // });
 
-    return rs.id;
+    // return rs.id;
+    return "";
   }
 }
