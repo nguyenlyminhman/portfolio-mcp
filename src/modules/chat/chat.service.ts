@@ -116,21 +116,21 @@ export class ChatService {
             }
           }
 
+          await this.historyMcp.saveMessage(conversationId, 'bot', fullReply);
           subscriber.next({ data: { done: true, fullReply } });
           
         } catch (err: any) {
           console.error('Error in chatStream:', err);
-          let errorMessage = `Neko đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡\n Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
+          fullReply = `Neko đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡\n Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
 
           if (err?.status === 429 || err?.message?.includes('429')) {
-            errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Neko thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡\nThe Free Tier's resources have their limits, but Neko's welcome is infinite. Hang with me for a minute! ⚡`;
+            fullReply = `Resource của gói Free có hạn nhưng lòng mến khách của Neko thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡\nThe Free Tier's resources have their limits, but Neko's welcome is infinite. Hang with me for a minute! ⚡`;
           }
 
-          fullReply = errorMessage;
-          subscriber.next({ data: { error: true, message: errorMessage } });
-          
-        } finally {
           await this.historyMcp.saveMessage(conversationId, 'bot', fullReply);
+          subscriber.next({ data: { error: true, message: fullReply } });
+
+        } finally {
           subscriber.complete();
         }
       })();
