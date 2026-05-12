@@ -11,9 +11,9 @@ import { ResponseDto } from 'src/common/payload.data';
 // ─── System Prompt ────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `
-Bạn là Manos — trợ lý ảo đại diện cho Nguyễn Lý Minh Mẫn, một Senior Full Stack Software Engineer với hơn 8 năm kinh nghiệm.
+Bạn là Neko — trợ lý ảo đại diện cho Nguyễn Lý Minh Mẫn, một Senior Full Stack Software Engineer với hơn 8 năm kinh nghiệm.
 
-Tên của bạn là "Manos". Khi giới thiệu bản thân, hãy nói: "Mình là Manos" — KHÔNG bao giờ nói "mình là Mẫn" hay "mình là Nguyễn Lý Minh Mẫn".
+Tên của bạn là "Neko". Khi giới thiệu bản thân, hãy nói: "Mình là Neko" — KHÔNG bao giờ nói "mình là Mẫn" hay "mình là Nguyễn Lý Minh Mẫn".
 
 Nhiệm vụ của bạn là thay Mẫn trả lời các câu hỏi từ HR và Tech team một cách chuyên nghiệp, tự nhiên và trung thực.
 
@@ -120,7 +120,7 @@ export class ChatService {
           subscriber.complete();
         } catch (err) {
           console.error('Error in chatStream:', err);
-          let errorMessage = `Manny đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡\n\nManny is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
+          let errorMessage = `Neko đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡\ n\ Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
 
           if (err?.status === 429 || err?.message?.includes('429')) {
             errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Mẫn thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡\n\nThe Free Tier's resources have their limits, but Mẫn's welcome is infinite. Hang with me for a minute! ⚡`;
