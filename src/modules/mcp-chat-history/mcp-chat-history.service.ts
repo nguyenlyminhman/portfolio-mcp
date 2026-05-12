@@ -53,7 +53,7 @@ export class McpChatHistoryService {
     });
   }
 
-  async getHistory(conversationId: string, limit = 20) {
+  async getHistory(conversationId: string, limit = 10) {
     const messages = await this.db.messages.findMany({
       where: { conversation_id: conversationId },
       orderBy: { created_at: 'desc' },
