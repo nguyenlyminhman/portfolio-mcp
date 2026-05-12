@@ -123,7 +123,7 @@ export class ChatService {
           let errorMessage = `Neko đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡\n Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
 
           if (err?.status === 429 || err?.message?.includes('429')) {
-            errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Mẫn thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡\n\nThe Free Tier's resources have their limits, but Mẫn's welcome is infinite. Hang with me for a minute! ⚡`;
+            errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Neko thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡\nThe Free Tier's resources have their limits, but Neko's welcome is infinite. Hang with me for a minute! ⚡`;
           }
 
           fullReply = errorMessage;
