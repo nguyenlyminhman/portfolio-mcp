@@ -14,7 +14,7 @@ model conversations {
   started_at      DateTime @db.Timestamp(6)
   last_message_at DateTime @db.Timestamp(6)
   message_count   Int      @default(0)
-  token_count     Int?     @default(0)
+  token_count     Int      @default(0)
 
   @@index([session_id, last_message_at(sort: Desc)], map: "idx_conversations_session")
 }
@@ -39,7 +39,7 @@ model messages {
   role            String
   content         String
   created_at      DateTime @db.Timestamp(6)
-  used_token      Int?
+  used_token      Int      @default(0)
 
   @@index([conversation_id, created_at(sort: Desc)], map: "idx_messages_conversation_date")
 }

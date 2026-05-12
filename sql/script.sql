@@ -11,7 +11,7 @@ CREATE TABLE public.users (
 	created_by text NULL,
 	updated_at timestamp NULL,
 	updated_by text NULL,
-	CONSTRAINT newtable_pk PRIMARY KEY (id),
+	CONSTRAINT users_pk PRIMARY KEY (id),
 	CONSTRAINT users_unique UNIQUE (email)
 );
 
@@ -27,6 +27,7 @@ CREATE TABLE public.my_cv (
 	created_by text NULL,
 	updated_at timestamp NULL,
 	updated_by text NULL,
+	is_active BOOLEAN DEFAULT TRUE,
 	CONSTRAINT my_cv_pk PRIMARY KEY (id)
 );
 
@@ -60,6 +61,7 @@ CREATE TABLE public.conversations (
 	started_at timestamp NOT NULL,
 	last_message_at timestamp NOT NULL,
 	message_count int4 DEFAULT 0 NOT NULL,
+	token_count int4 DEFAULT 0 NOT NULL,
 	CONSTRAINT conversations_pk PRIMARY KEY (id)
 );
 
@@ -77,26 +79,12 @@ CREATE TABLE public.messages (
 	conversation_id uuid NOT NULL,
 	"role" text NOT NULL,
 	"content" text NOT NULL,
-	created_at timestamp NOT null
+	 created_at timestamp NOT null,
+	 used_token  int4 DEFAULT 0 NOT NULL,
 	CONSTRAINT messages_pk PRIMARY KEY (id)
-);
+)
 -- Index: load messages theo ngày (Admin scroll, chatbot lấy history)
 CREATE INDEX idx_messages_conversation_date ON messages (conversation_id, created_at DESC);
-
--- ============================================================
--- 6. Function: tự động cập nhật updated_at cho my_cv
--- ============================================================
-CREATE OR REPLACE FUNCTION set_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_my_cv_updated_at
-  BEFORE UPDATE ON my_cv
-  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ============================================================
 -- 7. Function: sync last_message_at + message_count lên conversations
@@ -148,6 +136,9 @@ CREATE TABLE projects (
     sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
+	created_by text NULL,
+	updated_by text NULL,
+	is_active BOOLEAN DEFAULT TRUE,
     CONSTRAINT projects_pk PRIMARY KEY (id)
 );
 
