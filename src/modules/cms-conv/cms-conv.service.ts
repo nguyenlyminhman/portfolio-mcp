@@ -12,7 +12,7 @@ export class CmsConvService {
   async fetchConv(): Promise<ResponseDto> {
     const response = new ResponseDto();
     let rs = null;
-    
+
     try {
       const sessions = await this.db.hr_sessions.findMany();
       const conversations = await this.db.conversations.findMany();
@@ -51,6 +51,45 @@ export class CmsConvService {
 
     response.data = rs;
     return response;
+  }
+
+  async updateComment(id: string, comment: string, email: string): Promise<ResponseDto> {
+    const res = new ResponseDto();
+    let rs = null;
+    try {
+      rs = await this.db.conversations.update(
+        {
+          where: { id: id },
+          data: { comment: comment },
+          select: { id: true }
+        }
+      );
+
+      res.data = rs.id
+    } catch (err: any) {
+      throw new Error('Fetch content failed')
+    }
+
+    return res;
+  }
+
+  async updateUserAgent(id: string, userAgent: string, email: string): Promise<ResponseDto> {
+    const res = new ResponseDto();
+    let rs = null;
+    try {
+      await this.db.hr_sessions.update(
+        {
+          where: { id: id },
+          data: { user_agent: userAgent },
+          select: { id: true }
+        }
+      );
+
+      res.data = rs.id
+    } catch (err: any) {
+      throw new Error('Fetch content failed')
+    }
+    return res;
   }
 
   async createConversation(sessionId: string): Promise<string> {
