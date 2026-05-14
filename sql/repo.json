@@ -1,0 +1,18 @@
+[
+    {
+        "repo_name": "Dynamic Job",
+        "github_url": "https://github.com/nguyenlyminhman/spring.dynamic.cronjob",
+        "tech_stack":["Java", " PostgreSQL", " Spring Data JPA", " Hibernate"],
+        "highlights":"Thông thường với Spring @Scheduled, cron expression bị hardcode — muốn thay đổi lịch chạy phải sửa code và redeploy. Dự án này giải quyết bằng cách lưu cấu hình cron vào PostgreSQL và dùng Spring TaskScheduler để đăng ký/hủy task động tại runtime.",
+        "markdown":"Spring Dynamic CronJob giải quyết bài toán thay đổi lịch chạy scheduled task mà không cần restart ứng dụng.\n Kiến trúc kỹ thuật:\n Spring Boot 3.4 + TaskScheduler — thay vì @Scheduled tĩnh, dùng TaskScheduler bean để đăng ký/hủy task động tại runtime\nPostgreSQL + Spring Data JPA — mọi cron job (tên, expression, trạng thái) được persist vào DB, đảm bảo không mất cấu hình sau khi restart\nREST API — giao tiếp CRUD để tạo, cập nhật, bật/tắt job mà không cần chạm vào code\nWAR + Tomcat — đóng gói triển khai lên server thực tế thay vì chỉ chạy embedded\nLombok + ModelMapper — giảm boilerplate, tách biệt rõ Entity và DTO\nLuồng cốt lõi: App khởi động → đọc toàn bộ job active từ DB → đăng ký vào TaskScheduler. Khi có thay đổi qua API → cancel task cũ, schedule task mới, lưu lại DB. Restart an toàn vì DB là source of truth.",
+        "sort_order": 1
+    },
+    {
+        "repo_name": "spring.cqrs",
+        "github_url": "https://github.com/nguyenlyminhman/spring.cqrs",
+        "tech_stack": ["Java 17", "Spring Boot 3.5.8", " Spring Data JPA (Hibernate)", "PostgreSQL", " Redis (Spring Data Redis)", " SpringDoc OpenAPI (Swagger UI), ModelMapper 3.1.1", " Gson 2.13.2", " Lombok", " Maven"],
+        "highlights": "Demo kiến trúc CQRS + DDD với Spring Boot 3: tách biệt hoàn toàn Write Model (command) và Read Model (query), sử dụng Value Objects để validate dữ liệu tại domain layer, Redis làm read cache tăng hiệu năng, Swagger UI tích hợp sẵn để test API — không dùng Event Store, phù hợp học tập và làm nền tảng khởi tạo microservice.",
+        "markdown": "# Spring CQRS\n\nDemo ứng dụng CQRS kết hợp DDD dùng Spring Boot 3, PostgreSQL và Redis.\n\n## Tech Stack\nJava 17 · Spring Boot 3.5.8 · Spring Data JPA · PostgreSQL · Redis · Swagger UI · ModelMapper · Gson · Lombok · Maven\n\n## Cấu trúc chính\n- `command/` — Write side: controller, service, Value Objects, entity, DTO\n- `query/` — Read side: controller, projection model, JPA repository, DTO\n- `events/` — Domain events (nền tảng event-driven)\n- `sql/` — Script khởi tạo database\n\n## Điểm nổi bật\n- Tách biệt rõ Write Model / Read Model theo CQRS\n- Value Objects validate dữ liệu ngay tại domain layer\n- Redis cache cho read side\n- Swagger UI để test API tại `/swagger-ui/index.html`\n- Không dùng Event Store → đơn giản, dễ hiểu\n\n## Chạy nhanh\n```bash\ngit clone https://github.com/nguyenlyminhman/spring.cqrs.git\n# Cấu hình DB + Redis trong application.properties\n./mvnw spring-boot:run\n```\n\n## Hướng mở rộng\nAsync Projection · Event-Driven (Kafka/RabbitMQ) · Microservice · Event Sourcing",
+        "sort_order": 0
+    }
+]

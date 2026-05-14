@@ -149,7 +149,7 @@
           "tech_stack": [
             "Node.js (NestJS)",
             "ReactJS (Next.js, RTK)",
-            "MySQL"
+            "PostgresQL"
           ],
           "description": "A web application for managing PDF and JPG user documents.",
           "responsibilities": [
@@ -170,7 +170,7 @@
           "name": "Skills Management Platform (MAIKA Assistant)",
           "tech_stack": [
             "Node.js (NestJS)",
-            "Python",
+            "Python (FastApi)",
             "ReactJS",
             "PostgreSQL",
             "Redis",
@@ -210,7 +210,7 @@
           "tech_stack": [
             "Java (Spring Boot)",
             "React Native",
-            "MySQL"
+            "Oracle"
           ],
           "description": "Android app for product lookup and contract creation.",
           "responsibilities": [
