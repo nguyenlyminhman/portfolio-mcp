@@ -2,17 +2,96 @@
     {
         "repo_name": "Dynamic Job",
         "github_url": "https://github.com/nguyenlyminhman/spring.dynamic.cronjob",
-        "tech_stack":["Java", " PostgreSQL", " Spring Data JPA", " Hibernate"],
-        "highlights":"Thông thường với Spring @Scheduled, cron expression bị hardcode — muốn thay đổi lịch chạy phải sửa code và redeploy. Dự án này giải quyết bằng cách lưu cấu hình cron vào PostgreSQL và dùng Spring TaskScheduler để đăng ký/hủy task động tại runtime.",
-        "markdown":"Spring Dynamic CronJob giải quyết bài toán thay đổi lịch chạy scheduled task mà không cần restart ứng dụng.\n Kiến trúc kỹ thuật:\n Spring Boot 3.4 + TaskScheduler — thay vì @Scheduled tĩnh, dùng TaskScheduler bean để đăng ký/hủy task động tại runtime\nPostgreSQL + Spring Data JPA — mọi cron job (tên, expression, trạng thái) được persist vào DB, đảm bảo không mất cấu hình sau khi restart\nREST API — giao tiếp CRUD để tạo, cập nhật, bật/tắt job mà không cần chạm vào code\nWAR + Tomcat — đóng gói triển khai lên server thực tế thay vì chỉ chạy embedded\nLombok + ModelMapper — giảm boilerplate, tách biệt rõ Entity và DTO\nLuồng cốt lõi: App khởi động → đọc toàn bộ job active từ DB → đăng ký vào TaskScheduler. Khi có thay đổi qua API → cancel task cũ, schedule task mới, lưu lại DB. Restart an toàn vì DB là source of truth.",
-        "sort_order": 1
+        "tech_stack": [
+            "Java",
+            " PostgreSQL",
+            " Spring Data JPA",
+            " Hibernate"
+        ],
+        "description": "Hệ thống quản lý CronJob động được xây dựng bằng Spring Boot, cho phép thay đổi lịch chạy scheduled task ngay tại runtime mà không cần restart hay redeploy ứng dụng. Dự án thay thế cơ chế @Scheduled hardcode bằng mô hình lưu cron expression trong PostgreSQL kết hợp với Spring TaskScheduler, hỗ trợ tạo, cập nhật, bật/tắt job thông qua REST API.",
+        "highlights": "Thông thường với Spring @Scheduled, cron expression bị hardcode — muốn thay đổi lịch chạy phải sửa code và redeploy. Dự án này giải quyết bằng cách lưu cấu hình cron vào PostgreSQL và dùng Spring TaskScheduler để đăng ký/hủy task động tại runtime.",
+        "markdown": "Spring Dynamic CronJob giải quyết bài toán thay đổi lịch chạy scheduled task mà không cần restart ứng dụng.\n Kiến trúc kỹ thuật:\n Spring Boot 3.4 + TaskScheduler — thay vì @Scheduled tĩnh, dùng TaskScheduler bean để đăng ký/hủy task động tại runtime\nPostgreSQL + Spring Data JPA — mọi cron job (tên, expression, trạng thái) được persist vào DB, đảm bảo không mất cấu hình sau khi restart\nREST API — giao tiếp CRUD để tạo, cập nhật, bật/tắt job mà không cần chạm vào code\nWAR + Tomcat — đóng gói triển khai lên server thực tế thay vì chỉ chạy embedded\nLombok + ModelMapper — giảm boilerplate, tách biệt rõ Entity và DTO\nLuồng cốt lõi: App khởi động → đọc toàn bộ job active từ DB → đăng ký vào TaskScheduler. Khi có thay đổi qua API → cancel task cũ, schedule task mới, lưu lại DB. Restart an toàn vì DB là source of truth.",
+        "sort_order": 0
     },
     {
         "repo_name": "spring.cqrs",
         "github_url": "https://github.com/nguyenlyminhman/spring.cqrs",
-        "tech_stack": ["Java 17", "Spring Boot 3.5.8", " Spring Data JPA (Hibernate)", "PostgreSQL", " Redis (Spring Data Redis)", " SpringDoc OpenAPI (Swagger UI), ModelMapper 3.1.1", " Gson 2.13.2", " Lombok", " Maven"],
+        "tech_stack": [
+            "Java 17",
+            "Spring Boot 3.5.8",
+            " Spring Data JPA (Hibernate)",
+            "PostgreSQL",
+            " Redis (Spring Data Redis)",
+            " SpringDoc OpenAPI (Swagger UI), ModelMapper 3.1.1",
+            " Gson 2.13.2",
+            " Lombok",
+            " Maven"
+        ],
+        "description": "Demo kiến trúc CQRS kết hợp DDD được xây dựng bằng Spring Boot 3, tập trung tách biệt hoàn toàn Write Model (Command Side) và Read Model (Query Side) nhằm tối ưu khả năng mở rộng và hiệu năng hệ thống. Dự án sử dụng PostgreSQL cho persistence, Redis làm read cache, áp dụng Value Objects để validate dữ liệu tại domain layer và tích hợp Swagger UI để kiểm thử API nhanh chóng.",
         "highlights": "Demo kiến trúc CQRS + DDD với Spring Boot 3: tách biệt hoàn toàn Write Model (command) và Read Model (query), sử dụng Value Objects để validate dữ liệu tại domain layer, Redis làm read cache tăng hiệu năng, Swagger UI tích hợp sẵn để test API — không dùng Event Store, phù hợp học tập và làm nền tảng khởi tạo microservice.",
         "markdown": "# Spring CQRS\n\nDemo ứng dụng CQRS kết hợp DDD dùng Spring Boot 3, PostgreSQL và Redis.\n\n## Tech Stack\nJava 17 · Spring Boot 3.5.8 · Spring Data JPA · PostgreSQL · Redis · Swagger UI · ModelMapper · Gson · Lombok · Maven\n\n## Cấu trúc chính\n- `command/` — Write side: controller, service, Value Objects, entity, DTO\n- `query/` — Read side: controller, projection model, JPA repository, DTO\n- `events/` — Domain events (nền tảng event-driven)\n- `sql/` — Script khởi tạo database\n\n## Điểm nổi bật\n- Tách biệt rõ Write Model / Read Model theo CQRS\n- Value Objects validate dữ liệu ngay tại domain layer\n- Redis cache cho read side\n- Swagger UI để test API tại `/swagger-ui/index.html`\n- Không dùng Event Store → đơn giản, dễ hiểu\n\n## Chạy nhanh\n```bash\ngit clone https://github.com/nguyenlyminhman/spring.cqrs.git\n# Cấu hình DB + Redis trong application.properties\n./mvnw spring-boot:run\n```\n\n## Hướng mở rộng\nAsync Projection · Event-Driven (Kafka/RabbitMQ) · Microservice · Event Sourcing",
-        "sort_order": 0
+        "sort_order": 1
+    },
+    {
+        "repo_name": "energy-hub",
+        "github_url": "https://github.com/nguyenlyminhman/energy-hub",
+        "tech_stack": [
+            "NestJS v11",
+            "TypeScript v5",
+            "Prisma v6",
+            "PostgreSQL",
+            "Passport.js + JWT",
+            "class-validator / class-transformer",
+            "Swagger (OpenAPI)",
+            "nestjs-i18n",
+            "Helmet",
+            "bcrypt",
+            "Jest"
+        ],
+        "description": "RESTful API theo dõi số điện tiêu thụ hàng tháng của hộ gia đình và nhà cung cấp điện. Hệ thống hỗ trợ đăng ký khách hàng, gán công tơ điện, ghi nhận chỉ số định kỳ, quản lý bảng giá điện, phân quyền theo vai trò (RBAC) qua JWT, và đa ngôn ngữ (EN/VI).",
+        "highlights": "Áp dụng kiến trúc Domain-Driven Design (DDD) với 4 layer rõ ràng (Presentation → Application → Domain → Infrastructure). Domain Layer hoàn toàn độc lập với framework và DB — sử dụng Entity, Value Object, và Repository Interface. Infrastructure Layer duy nhất biết đến Prisma và xử lý mapping Entity ↔ DB record. Có đầy đủ test pyramid: unit, integration, e2e với Jest.",
+        "markdown": "# ⚡ Energy Hub\n\nRESTful API theo dõi số điện tiêu thụ hàng tháng, xây dựng với **NestJS**, **Prisma**, **PostgreSQL** theo kiến trúc **Domain-Driven Design (DDD)**.\n\n## Tính năng\n- Đăng ký khách hàng & gán công tơ điện\n- Ghi nhận chỉ số điện định kỳ\n- Quản lý nhà cung cấp & bảng giá điện\n- Phân quyền RBAC qua JWT\n- Đa ngôn ngữ (EN/VI) với nestjs-i18n\n\n## Kiến trúc DDD\n```\nPresentation Layer  ← HTTP Controllers\nApplication Layer   ← Use Cases\nDomain Layer        ← Entities, Value Objects, Repository Interfaces\nInfrastructure Layer← Prisma Repositories\n```\n\n## Tech Stack\n| Thành phần | Công nghệ |\n|---|---|\n| Framework | NestJS v11 |\n| Language | TypeScript v5 |\n| ORM | Prisma v6 |\n| Database | PostgreSQL |\n| Auth | Passport.js + JWT |\n| Docs | Swagger (OpenAPI) |\n| Testing | Jest (unit + integration + e2e) |",
+        "sort_order": 2
+    },
+    {
+        "repo_name": "graphql-schema-first",
+        "link_git": "https://github.com/nguyenlyminhman/graphql-schema-first",
+        "tech_stack": [
+            "NestJS v9",
+            " GraphQL (Schema-First) + Apollo Server v4",
+            " Prisma v5",
+            " PostgreSQL",
+            " JWT (@nestjs/jwt)",
+            " bcrypt",
+            "graphql-subscriptions",
+            " TypeScript"
+        ],
+        "description": "Dự án backend API xây dựng theo mô hình Schema-First với NestJS và GraphQL. Thay vì dùng decorator TypeScript để tự sinh schema (code-first), dự án định nghĩa schema bằng SDL (.graphql files) trước, sau đó NestJS đọc các file này và map với resolver. Kết hợp Prisma ORM để tương tác với PostgreSQL, có JWT auth, mã hoá password bằng bcrypt, và hỗ trợ GraphQL Subscriptions cho real-time.",
+        "highlight": "- Schema-First approach: viết GraphQL SDL (.graphql files) làm nguồn sự thật duy nhất cho API contract\n- Tích hợp Prisma v5 + PostgreSQL với migration script sẵn sàng\n- JWT Authentication + bcrypt password hashing\n- GraphQL Subscriptions hỗ trợ real-time\n- Auto-generate TypeScript types từ .graphql files qua ts-morph (script: generate:typing)\n- Có sẵn file query.script.txt để test nhanh các mutation/query\n- ESLint + Prettier + Jest (unit + e2e) setup đầy đủ",
+        "markdown": "# graphql-schema-first\n\nNestJS GraphQL API theo **Schema-First** approach, tích hợp Prisma ORM + PostgreSQL + JWT Auth + Subscriptions.\n\n## Tech Stack\n- **Framework**: NestJS v9\n- **GraphQL**: @nestjs/graphql + Apollo Server v4\n- **Database**: PostgreSQL + Prisma v5\n- **Auth**: JWT + bcrypt\n- **Real-time**: graphql-subscriptions\n- **Language**: TypeScript\n\n## Điểm nổi bật\n- Viết GraphQL schema bằng SDL trước, generate TS types sau\n- Prisma migration ready (`npm run db:migrate`)\n- JWT Authentication tích hợp sẵn\n- Hỗ trợ GraphQL Subscriptions\n- Test sample queries trong `query.script.txt`\n\n## Quick Start\n```bash\nnpm install\ncp .env.example .env  # điền DATABASE_URL\nnpm run db:migrate\nnpm run generate:typing\nnpm run start:dev\n```\nGraphQL Playground: `http://localhost:3000/graphql`"
+    },
+    {
+        "repo_name": "nekofolio",
+        "link_git": "https://github.com/nguyenlyminhman/nekofolio",
+        "tech_stack": [
+            "Next.js 16 (App Router)",
+            "TypeScript 5",
+            "Tailwind CSS 3",
+            "shadcn/ui",
+            "Radix UI",
+            "Zustand",
+            "TanStack React Query",
+            "Axios",
+            "React Hook Form",
+            "Zod"
+        ],
+        "description": "Website portfolio cá nhân hiện đại được xây dựng với Next.js 16. Bao gồm trang public giới thiệu bản thân (Hero, About, Tech Stack, Projects, Leadership, AI, Contact), chatbot AI tích hợp nổi trên trang, và một admin panel đầy đủ tính năng ở route /admin để quản lý CV, repo GitHub, và nội dung hiển thị trên portfolio.",
+        "highlight": "1. Admin panel bảo mật với auth guard (Zustand store + route /login), gồm CVManager và RepoManager để quản lý nội dung động. 2. Chatbot widget AI tích hợp trực tiếp vào trang portfolio, giao tiếp với backend qua service riêng (chatchit.ts). 3. Kiến trúc service layer rõ ràng: tách biệt endpoint, authService, cvService, repoService — dễ bảo trì và mở rộng. 4. Sử dụng toàn bộ hệ sinh thái hiện đại: TanStack Query cho server state, Zod + React Hook Form cho form validation, Framer Motion cho animation.",
+        "markdown": "# 🐱 Nekofolio\n\nWebsite portfolio cá nhân fullstack với admin panel, AI chatbot và quản lý nội dung động.\n\n## Tech Stack\n- **Framework:** Next.js 16 App Router + TypeScript\n- **UI:** Tailwind CSS + shadcn/ui + Radix UI\n- **State:** Zustand + TanStack React Query\n- **Forms:** React Hook Form + Zod\n- **Animation:** Framer Motion\n\n## Tính năng nổi bật\n- 🤖 Chatbot AI nổi trên trang portfolio\n- 🔐 Admin panel bảo mật (quản lý CV & repo)\n- 📊 Dashboard admin\n- 🌙 Dark/light mode\n- 🍪 Cookie consent banner"
     }
 ]
+// https://github.com/nguyenlyminhman/spring.graphql
+// https://github.com/nguyenlyminhman/spring.testing
+// https://github.com/nguyenlyminhman/hash.info
+// https://github.com/nguyenlyminhman/spring.rabbitmq.subscriber
+// https://github.com/nguyenlyminhman/spring.rabbitmq.publisher
