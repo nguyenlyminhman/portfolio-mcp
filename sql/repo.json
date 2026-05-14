@@ -109,6 +109,35 @@
         "description": "Backend API service cho một nền tảng portfolio cá nhân của developer. Cung cấp các REST API để quản lý CV, GitHub repos, và hội thoại chat; tích hợp AI (Google Gemini) thông qua giao thức MCP để cho phép AI tự động truy vấn dữ liệu CV, repo, lịch sử chat và session HR. Có hỗ trợ real-time chat qua WebSocket/Socket.IO và JWT-based authentication với role-based access control.",
         "highlight": "Điểm nổi bật nhất là kiến trúc MCP (Model Context Protocol) — server expose các 'tools' (mcp-cv, mcp-github, mcp-hr, mcp-chat-history) cho phép AI model tự động gọi để lấy dữ liệu có cấu trúc trong quá trình hội thoại. Đây là pattern AI-native backend hiện đại, giúp LLM tương tác trực tiếp với dữ liệu portfolio thay vì chỉ rely vào context tĩnh.",
         "markdown": "# portfolio-mcp\n\nA backend API service for a personal portfolio platform, built with **NestJS** and integrated with **MCP (Model Context Protocol)**. This project powers an AI-enhanced portfolio system featuring CV management, GitHub repository syncing, real-time chat via WebSocket, and an HR/interviewer session interface — all served through a well-structured REST API with JWT authentication.\n\n## Tech Stack\n\n| Layer | Technology |\n|---|---|\n| Framework | NestJS 11 |\n| Language | TypeScript 5 |\n| Database | PostgreSQL (via Prisma ORM) |\n| AI / LLM | Google Generative AI (Gemini) |\n| MCP Protocol | `@modelcontextprotocol/sdk` |\n| Auth | JWT + bcrypt |\n| Real-time | WebSocket / Socket.IO |\n| API Docs | Swagger |\n| Validation | class-validator + Zod |\n\n## Features\n\n- **JWT Auth** with role-based access control and public route exemption\n- **CMS modules** for managing CV entries, GitHub repo metadata, and chat conversations\n- **AI Chat** powered by Google Gemini with MCP tool integration\n- **MCP Tools** expose structured portfolio data (CV, repos, HR sessions, chat history) to the LLM at runtime\n- **WebSocket gateway** for real-time bidirectional messaging via Socket.IO\n- **HR Session Tracking** records visitor/interviewer sessions with user-agent metadata\n- **Global exception filter** and **logging interceptor** for consistent observability\n- **Swagger UI** at `/api` with custom styling\n\n## Getting Started\n\n```bash\n# Install dependencies\nnpm install\n\n# Generate Prisma client\nnpm run db:generate\n\n# Run in dev mode\nnpm run start:dev\n```\n\n## Environment Variables\n\n```env\nDATABASE_URL=postgresql://user:password@localhost:5432/portfolio\nJWT_SECRET=your_jwt_secret\nJWT_EXPIRES_IN=7d\nGEMINI_API_KEY=your_gemini_api_key\nPORT=3000\n```\n\n## Scripts\n\n| Command | Description |\n|---|---|\n| `npm run start:dev` | Start in watch/dev mode |\n| `npm run start:prod` | Run compiled production build |\n| `npm run db:generate` | Generate Prisma client |\n| `npm run db:pull` | Sync schema from database |\n| `npm run test` | Run unit tests |\n| `npm run test:e2e` | Run end-to-end tests |"
+    },
+    {
+        "repo_name": "rabbitmq-publisher",
+        "link_git": "https://github.com/nguyenlyminhman/rabbitmq-publisher",
+        "tech_stack": [
+            "NestJS 10",
+            "TypeScript",
+            "RabbitMQ (AMQP)",
+            "@golevelup/nestjs-rabbitmq",
+            "NestJS Microservices (AMQP transport)",
+            "@nestjs/config"
+        ],        "description": "Service đóng vai trò Producer trong mô hình message queue. Khi khởi động, service tự động seed toàn bộ exchange và queue lên RabbitMQ (qua SeederRabbitMQService). Sau đó expose REST API (Swagger) để gửi message qua 4 loại exchange: Direct, Fanout, Topic, Headers — giúp học và demo từng routing strategy của RabbitMQ một cách trực quan.",
+        "highlight": "Tự động seed exchange & queue khi boot (không cần cấu hình tay trên dashboard). Tổ chức code theo từng exchange type thành module riêng biệt. Enum tập trung tên exchange, queue, routing key — tránh magic string. File exchange definition tách biệt, dễ mở rộng thêm queue/binding mới.",
+        "markdown": "## rabbitmq-publisher\n\n**Tech Stack:** NestJS · TypeScript · RabbitMQ · Swagger\n\n**Mô tả:**\nService publisher (producer) gửi message qua 4 loại RabbitMQ exchange:\n- `Direct` — định tuyến chính xác theo routing key\n- `Fanout` — broadcast đến tất cả queue đã bind\n- `Topic` — định tuyến theo pattern wildcard (`*`, `#`)\n- `Headers` — định tuyến theo thuộc tính header của message\n\n**Điểm nổi bật:**\n- Tự seed exchange & queue lúc khởi động qua `SeederRabbitMQService`\n- REST API + Swagger để trigger từng loại exchange\n- Enum tập trung, cấu trúc module rõ ràng theo từng exchange type\n\n```\nHTTP Request → Controller → RbmqExchangeService → RabbitMQ → Queue\n```"
+    },
+    {
+        "repo_name": "rabbitmq-subcriber",
+        "link_git": "https://github.com/nguyenlyminhman/rabbitmq-subcriber",
+        "tech_stack": [
+            "NestJS 10",
+            "TypeScript",
+            "RabbitMQ (AMQP)",
+            "@golevelup/nestjs-rabbitmq",
+            "NestJS Microservices (AMQP transport)",
+            "@nestjs/config"
+        ],
+        "description": "Service đóng vai trò Consumer trong mô hình message queue. Kết nối đến RabbitMQ và lắng nghe message từ 4 loại exchange tương ứng với publisher. Mỗi exchange type có một module riêng với controller chứa các handler nhận message. Cần chạy phối hợp cùng rabbitmq-publisher để thấy toàn bộ flow hoạt động.",
+        "highlight": "Tổ chức consumer theo module riêng cho từng exchange type — dễ đọc và mở rộng. Dùng chung enum tên queue/routing key với publisher để đảm bảo tính nhất quán. Cấu trúc gọn hơn publisher (không có service layer) vì vai trò chỉ là nhận và xử lý message.",
+        "markdown": "## rabbitmq-subcriber\n\n**Tech Stack:** NestJS · TypeScript · RabbitMQ · NestJS Microservices\n\n**Mô tả:**\nService subscriber (consumer) nhận message từ 4 loại RabbitMQ exchange:\n- `Direct` — nhận message theo routing key chính xác\n- `Fanout` — nhận broadcast từ tất cả publisher gửi vào exchange\n- `Topic` — nhận message khớp pattern wildcard\n- `Headers` — nhận message theo header attributes\n\n**Điểm nổi bật:**\n- Mỗi exchange type → 1 module riêng với message handler\n- Enum queue/routing key dùng chung với publisher\n- Cần khởi động publisher trước để exchange & queue được seed\n\n```\nRabbitMQ Queue → NestJS MessagePattern Handler → Xử lý / Log message\n```\n\n**Full flow:**\n```\n[Docker RabbitMQ] ← publisher seeds exchanges/queues\n     ↓\n[publisher REST API] → gửi message\n     ↓\n[subscriber] → nhận & log\n```"
     }
 ]
 // https://github.com/nguyenlyminhman/spring.graphql
