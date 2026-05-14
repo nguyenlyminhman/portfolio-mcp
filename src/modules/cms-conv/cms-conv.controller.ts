@@ -43,10 +43,12 @@ export class CmsConvController {
   @ApiBearerAuth()
   @Post('/user-agent')
   async updateUserAgent(@CurrentUser() user: any, @Body() updateUserAgentDto: UpdateUserAgentDto): Promise<ResponseApi> {
-    const { id, userAgent } = updateUserAgentDto;
+    const { id, userAgent, isInteresting } = updateUserAgentDto;
+    console.log(id, userAgent, isInteresting);
+    
     const { email } = user;
 
-    const rs: ResponseDto = await this.cmsConv.updateUserAgent(id, userAgent, email);
+    const rs: ResponseDto = await this.cmsConv.updateUserAgent(id, userAgent, isInteresting, email);
     return ResponseApi.success(rs, 'Success', HttpStatus.OK);
   }
 }
