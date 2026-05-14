@@ -61,10 +61,10 @@ export class CmsRepoController {
       },
     }),
   )
-  async importRepo(@UploadedFile() file: Express.Multer.File,
+  async importRepo(@CurrentUser() user: any, @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) { throw new BadRequestException('File is required'); }
-    // const { email } = user;
+    const { email } = user;
     const jsonString = file.buffer.toString('utf-8');
 
     let payload: any[];
@@ -75,7 +75,7 @@ export class CmsRepoController {
       throw new BadRequestException('Invalid JSON file');
     }
 
-    const rs = this.repoService.importRepo(payload, 'email');
+    const rs = this.repoService.importRepo(payload, email);
 
     return ResponseApi.success(rs, 'Success', HttpStatus.OK);
   }
