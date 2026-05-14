@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DbConnectService } from '../db-connect/db-connect.service';
 import { ResponseDto } from 'src/common/payload.data';
 import { v4 as uuidv4 } from 'uuid';
+import { ImportRepoDto } from './dto/Import-repo.dto';
 
 @Injectable()
 export class CmsRepoService {
@@ -20,7 +21,7 @@ export class CmsRepoService {
     sortOrder: number,
     email: string
   ): Promise<ResponseDto> {
-  
+
     const id = uuidv4();
     const res = new ResponseDto();
     let rs = null;
@@ -100,6 +101,42 @@ export class CmsRepoService {
       throw new Error('Fetch projects failed');
     }
     response.data = rs;
+
+    return response;
+  }
+
+  async importRepo(repoPayload: ImportRepoDto[], email: string): Promise<ResponseDto> {
+    const response = new ResponseDto();
+    let data = null;
+    try {
+      if (!Array.isArray(repoPayload)) {
+        throw new Error('Payload must be array');
+      }
+
+      data = repoPayload.map((item) => ({
+        id: uuidv4(),
+        repo_name: item.repo_name,
+        github_url: item.github_url,
+        tech_stack: item.tech_stack,
+        highlights: item.highlights,
+        description: item.highlights,
+        markdown: item.markdown,
+        sort_order: item.sort_order,
+        is_active: true,
+        created_at: new Date(),
+        created_by: email,
+      }));
+
+      await this.db.projects.createMany({
+        data,
+        skipDuplicates: true,
+      });
+
+
+    } catch (err: any) {
+      throw new Error('Import failed');
+    }
+    response.data = data.length;
 
     return response;
   }
