@@ -45,7 +45,7 @@ export class CmsRepoController {
     return ResponseApi.success(rs, 'Success', HttpStatus.OK);
   }
 
-  @Public()
+  @ApiBearerAuth()
   @Post('/import')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -75,7 +75,7 @@ export class CmsRepoController {
       throw new BadRequestException('Invalid JSON file');
     }
 
-    const rs = this.repoService.importRepo(payload, email);
+    const rs = await this.repoService.importRepo(payload, email);
 
     return ResponseApi.success(rs, 'Success', HttpStatus.OK);
   }

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DbConnectService } from '../db-connect/db-connect.service';
 import { ResponseDto } from 'src/common/payload.data';
 import { v4 as uuidv4 } from 'uuid';
-import { ImportRepoDto } from './dto/Import-repo.dto';
+import { ImportRepoDto } from './dto/import-repo.dto';
 
 @Injectable()
 export class CmsRepoService {
