@@ -88,6 +88,27 @@
         "description": "Website portfolio cá nhân hiện đại được xây dựng với Next.js 16. Bao gồm trang public giới thiệu bản thân (Hero, About, Tech Stack, Projects, Leadership, AI, Contact), chatbot AI tích hợp nổi trên trang, và một admin panel đầy đủ tính năng ở route /admin để quản lý CV, repo GitHub, và nội dung hiển thị trên portfolio.",
         "highlight": "1. Admin panel bảo mật với auth guard (Zustand store + route /login), gồm CVManager và RepoManager để quản lý nội dung động. 2. Chatbot widget AI tích hợp trực tiếp vào trang portfolio, giao tiếp với backend qua service riêng (chatchit.ts). 3. Kiến trúc service layer rõ ràng: tách biệt endpoint, authService, cvService, repoService — dễ bảo trì và mở rộng. 4. Sử dụng toàn bộ hệ sinh thái hiện đại: TanStack Query cho server state, Zod + React Hook Form cho form validation, Framer Motion cho animation.",
         "markdown": "# 🐱 Nekofolio\n\nWebsite portfolio cá nhân fullstack với admin panel, AI chatbot và quản lý nội dung động.\n\n## Tech Stack\n- **Framework:** Next.js 16 App Router + TypeScript\n- **UI:** Tailwind CSS + shadcn/ui + Radix UI\n- **State:** Zustand + TanStack React Query\n- **Forms:** React Hook Form + Zod\n- **Animation:** Framer Motion\n\n## Tính năng nổi bật\n- 🤖 Chatbot AI nổi trên trang portfolio\n- 🔐 Admin panel bảo mật (quản lý CV & repo)\n- 📊 Dashboard admin\n- 🌙 Dark/light mode\n- 🍪 Cookie consent banner"
+    },
+    {
+        "repo_name": "portfolio-mcp",
+        "link_git": "https://github.com/nguyenlyminhman/portfolio-mcp",
+        "tech_stack": [
+            "NestJS 11",
+            "TypeScript 5",
+            "PostgreSQL",
+            "Prisma ORM",
+            "Google Gemini AI",
+            "MCP SDK (@modelcontextprotocol/sdk)",
+            "JWT Auth",
+            "Socket.IO (WebSocket)",
+            "Swagger",
+            "Zod",
+            "Helmet",
+            "Multer"
+        ],
+        "description": "Backend API service cho một nền tảng portfolio cá nhân của developer. Cung cấp các REST API để quản lý CV, GitHub repos, và hội thoại chat; tích hợp AI (Google Gemini) thông qua giao thức MCP để cho phép AI tự động truy vấn dữ liệu CV, repo, lịch sử chat và session HR. Có hỗ trợ real-time chat qua WebSocket/Socket.IO và JWT-based authentication với role-based access control.",
+        "highlight": "Điểm nổi bật nhất là kiến trúc MCP (Model Context Protocol) — server expose các 'tools' (mcp-cv, mcp-github, mcp-hr, mcp-chat-history) cho phép AI model tự động gọi để lấy dữ liệu có cấu trúc trong quá trình hội thoại. Đây là pattern AI-native backend hiện đại, giúp LLM tương tác trực tiếp với dữ liệu portfolio thay vì chỉ rely vào context tĩnh.",
+        "markdown": "https://github.com/nguyenlyminhman/portfolio-mcp/blob/main/README.md"
     }
 ]
 // https://github.com/nguyenlyminhman/spring.graphql
