@@ -116,22 +116,22 @@ export class ChatService {
             }
           }
 
-          await this.historyMcp.saveMessage(conversationId, 'bot', fullReply);
           subscriber.next({ data: { done: true, fullReply } });
-          
-        } catch (err: any) {
-          console.error('Error in chatStream:', err);
-          fullReply = `Neko đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡\n Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
+          subscriber.complete();
+        } catch (err) {
+          let errorMessage = `Manny đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡\n\nManny is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
 
           if (err?.status === 429 || err?.message?.includes('429')) {
-            fullReply = `Resource của gói Free có hạn nhưng lòng mến khách của Neko thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡\nThe Free Tier's resources have their limits, but Neko's welcome is infinite. Hang with me for a minute! ⚡`;
+            errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Mẫn thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡\n\nThe Free Tier's resources have their limits, but Mẫn's welcome is infinite. Hang with me for a minute! ⚡`;
           }
 
-          await this.historyMcp.saveMessage(conversationId, 'bot', fullReply);
-          subscriber.next({ data: { error: true, message: fullReply } });
-
-        } finally {
+          fullReply = errorMessage;
+          subscriber.next({ data: { error: true, message: errorMessage } });
           subscriber.complete();
+        } finally {
+          if (conversationId) {
+            await this.historyMcp.saveMessage(conversationId, 'bot', fullReply);
+          }
         }
       })();
     });
@@ -191,16 +191,16 @@ export class ChatService {
       trimmed = trimmed.slice(firstUserIdx);
     }
 
-    // 2. Đảm bảo xen kẽ: nếu 2 role giống nhau liên tiếp, bỏ cái sau
+    // 2. Đảm bảo xen kẽ user/model: nếu 2 role giống nhau liên tiếp → bỏ cái sau
+    // KHÔNG gộp nội dung vì sẽ khiến Gemini tóm tắt lại tin cũ trước khi trả lời
     const chatHistory: Content[] = [];
     for (const msg of trimmed) {
       const last = chatHistory[chatHistory.length - 1];
       if (last && last.role === msg.role) {
-        // Gộp nội dung vào tin trước thay vì bỏ, tránh mất context
-        (last.parts as { text: string }[]).push({ text: msg.parts[0].text });
-      } else {
-        chatHistory.push(msg as Content);
+        // Bỏ qua — CV/GitHub context đã đủ để Gemini trả lời đúng
+        continue;
       }
+      chatHistory.push(msg as Content);
     }
 
     // 3. Nếu tin cuối là 'model', bỏ đi (Gemini không chấp nhận kết thúc bằng model)
