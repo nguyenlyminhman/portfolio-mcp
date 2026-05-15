@@ -115,6 +115,17 @@ export class AppUtil {
     return { skip, take };
   }
 
+  static isVietnamese = (text: string) => {
+    if (!text || typeof text !== "string") {
+      return false;
+    }
+
+    const vietnameseRegex =
+      /[a-zA-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]+$/;
+
+    return vietnameseRegex.test(text.trim());
+  };
+
   //   static canWorkOnPermissions(
   //     user: UserInterface,
   //     permission: UserPermissions[],
@@ -131,5 +142,4 @@ export class AppUtil {
 // export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 // export const Permission = (...roles: UserPermissions[]) =>
 //   SetMetadata(PERMISSION_KEY, roles);
-
 

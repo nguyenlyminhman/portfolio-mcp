@@ -7,23 +7,26 @@ import { McpGithubService } from '../mcp-github/mcp-github.service';
 import { McpChatHistoryService } from '../mcp-chat-history/mcp-chat-history.service';
 import { McpHrService } from '../mcp-hr/mcp-hr.service';
 import { ResponseDto } from 'src/common/payload.data';
+import { AppUtil } from '../utils/app.util';
 
 // ─── System Prompt ────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `
 Bạn là Neko — trợ lý ảo đại diện cho Nguyễn Lý Minh Mẫn, một Senior Full Stack Software Engineer với hơn 8 năm kinh nghiệm.
 
-Tên của bạn là "Neko". Khi giới thiệu bản thân, hãy nói: "Mình là Neko" — KHÔNG bao giờ nói "mình là Mẫn" hay "mình là Nguyễn Lý Minh Mẫn".
+DANH TÍNH — BẮT BUỘC:
+- Tên của bạn là "Neko". LUÔN LUÔN tự giới thiệu là "Neko".
+- TUYỆT ĐỐI KHÔNG dùng bất kỳ tên nào khác (Manos, Mẫn, AI, Bot...).
+- Nếu HR hỏi tên bạn là gì → trả lời: "Mình là Manos".
 
-Nhiệm vụ của bạn là thay Mẫn trả lời các câu hỏi từ HR và Tech team một cách chuyên nghiệp, tự nhiên và trung thực.
-
-Nguyên tắc khi trả lời:
-- Xưng "mình", gọi HR bằng tên nếu đã biết, nếu chưa thì gọi là "bạn" — thân thiện nhưng vẫn chuyên nghiệp
-- Chỉ trả lời dựa trên thông tin CV và GitHub được cung cấp, không bịa đặt
-- Nếu không có thông tin, hãy nói thẳng: "Mình chưa có kinh nghiệm về mảng này"
-- Khi HR hỏi về kỹ năng kỹ thuật, hãy dẫn chứng bằng dự án thực tế nếu có
-- Giữ câu trả lời ngắn gọn, súc tích — không dài dòng quá 4-5 câu trừ khi được hỏi chi tiết
-- Nếu HR hỏi về mức lương hay thời gian bắt đầu, hãy gợi ý liên hệ trực tiếp qua email: nguyenlyminhman@gmail.com
+CÁCH TRẢ LỜI — BẮT BUỘC:
+- KHÔNG bao giờ tóm tắt hoặc nhắc lại nội dung của tin nhắn trước đó.
+- KHÔNG bắt đầu câu trả lời bằng cách lặp lại câu hỏi hay câu trả lời cũ.
+- Trả lời THẲNG vào câu hỏi hiện tại — ngắn gọn, súc tích.
+- Xưng "mình", gọi HR bằng tên nếu đã biết, nếu chưa thì gọi là "bạn".
+- Chỉ trả lời dựa trên thông tin CV và GitHub được cung cấp, không bịa đặt.
+- Nếu không có thông tin: "Mình chưa có kinh nghiệm về mảng này".
+- Nếu HR hỏi về lương hay thời gian bắt đầu: gợi ý email nguyenlyminhman@gmail.com.
 `.trim();
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -119,10 +122,18 @@ export class ChatService {
           subscriber.next({ data: { done: true, fullReply } });
           subscriber.complete();
         } catch (err) {
-          let errorMessage = `Manny đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡\n\nManny is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
+          let errorMessage = `Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
+          const isVn = AppUtil.isVietnamese(userMessage);
+
+          if (isVn) {
+            errorMessage = `Neko đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡`;
+          }
 
           if (err?.status === 429 || err?.message?.includes('429')) {
-            errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của Mẫn thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡\n\nThe Free Tier's resources have their limits, but Mẫn's welcome is infinite. Hang with me for a minute! ⚡`;
+            errorMessage = `The Free Tier's resources have their limits, but my boss's welcome is infinite. Hang with me for a minute! ⚡`;
+            if (isVn) {
+              errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của sếp mình thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡`;
+            }
           }
 
           fullReply = errorMessage;
@@ -173,10 +184,19 @@ export class ChatService {
     const previousMessages = history.slice(0, -1);
 
     // Chuẩn hoá role về 'user' | 'model'
-    const normalized = previousMessages.map((m) => ({
-      role: m.role === 'hr' || m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content ?? '' }],
-    }));
+    // Tin của model: cắt ngắn còn 300 ký tự để Gemini không "warm up" lại nội dung cũ
+    const MAX_MODEL_MSG_LENGTH = 300;
+    const normalized = previousMessages.map((m) => {
+      const isUser = m.role === 'hr' || m.role === 'user';
+      let text = m.content ?? '';
+      if (!isUser && text.length > MAX_MODEL_MSG_LENGTH) {
+        text = text.slice(0, MAX_MODEL_MSG_LENGTH) + '…';
+      }
+      return {
+        role: isUser ? 'user' : 'model',
+        parts: [{ text }],
+      };
+    });
 
     // Gemini yêu cầu: phải bắt đầu bằng 'user' và xen kẽ user/model
     // → bỏ các tin model ở đầu, rồi đảm bảo xen kẽ đúng
