@@ -12,9 +12,14 @@ export class CookiesService {
     private readonly cmsConvService: CmsConvService
   ) { }
 
-  async createSessionId(): Promise<string> {
-    const rs = uuidv4().toString();
+  async createSessionId(cookieId: string): Promise<string> {
 
+    const isExist = await this.hrSessionService.checkCookie(cookieId);
+    if (isExist) {
+      return cookieId;
+    }
+
+    const rs = uuidv4().toString();
     await this.hrSessionService.createHrSessionId(rs);
     await this.cmsConvService.createConversation(rs);
 

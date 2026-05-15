@@ -59,6 +59,25 @@ export class HrSessionService {
     return rs;
   }
 
+  async checkCookie(cookieId: string): Promise<any> {
+    let rs = null;
+    try {
+    rs = await this.db.hr_sessions.findUnique({
+      where: {
+        cookie_token: cookieId,
+      }, 
+      select : {
+        id: true,
+        cookie_token: true
+      }
+    });
+    } catch (err) {
+      console.log(err)
+    }
+
+    return rs;
+  }
+
   async updateUserAgent(id: string, userAgent: string) {
     const rs = await this.db.hr_sessions.update({
       where: {
