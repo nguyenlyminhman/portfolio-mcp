@@ -71,7 +71,7 @@ export class McpGithubService {
       description: project.description,
       tech_stack: project.tech_stack,
       highlights: project.highlights,
-      markdown: project.markdown,
+      // markdown: project.markdown,
       github_url: project.github_url,
       live_url: project.live_url,
       // created_at: project.created_at,

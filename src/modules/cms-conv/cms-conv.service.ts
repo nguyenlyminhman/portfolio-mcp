@@ -14,7 +14,7 @@ export class CmsConvService {
     let rs = null;
 
     try {
-      const sessions = await this.db.hr_sessions.findMany();
+      const sessions = await this.db.hr_sessions.findMany({ orderBy: { first_seen_at: 'desc' } });
       const conversations = await this.db.conversations.findMany();
 
       rs = sessions.map((s) => ({
