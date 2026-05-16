@@ -168,7 +168,7 @@ export class ChatService {
 
           // 6. Lấy song song history, CV, repos
           const [history, cv, repos] = await Promise.all([
-            this.historyMcp.getHistory(conversation.id),
+            this.historyMcp.getHistory(conversation.id, 20),
             this.cvMcp.getCv(),
             this.githubMcp.listRepos(),
           ]);
@@ -215,7 +215,7 @@ export class ChatService {
           subscriber.next({ data: { done: true, fullReply } });
           subscriber.complete();
         } catch (err) {
-          let errorMessage = `Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;
+          let errorMessage = `Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;          
           const isVn = AppUtil.isVietnamese(userMessage);
 
           if (isVn) {
@@ -247,7 +247,7 @@ export class ChatService {
     const responseDto = new ResponseDto();
     try {
       const conversation = await this.historyMcp.getOrCreateConversation(sessionId);
-      responseDto.data = await this.historyMcp.getHistory(conversation.id);
+      responseDto.data = await this.historyMcp.getHistory(conversation.id, 500);
     } catch {
       responseDto.data = { history: [] };
     }
