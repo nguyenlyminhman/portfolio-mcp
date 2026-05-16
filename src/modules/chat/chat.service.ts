@@ -9,10 +9,99 @@ import { McpHrService } from '../mcp-hr/mcp-hr.service';
 import { ResponseDto } from 'src/common/payload.data';
 import { AppUtil } from '../utils/app.util';
 
+// ─── Years of Experience Calculator ──────────────────────────────────────────
+
+/**
+ * Parses a duration string like "Apr 2024 – Now" or "Jul 2019 – Mar 2022"
+ * and returns { start: Date, end: Date }.
+ */
+function parseDuration(duration: string): { start: Date; end: Date } | null {
+  const MONTH_MAP: Record<string, number> = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+  };
+
+  // Normalise separator variations: "–", "—", "-", " to "
+  const parts = duration.split(/\s*[–—\-]\s*|\s+to\s+/i).map((s) => s.trim());
+  if (parts.length < 2) return null;
+
+  const parseMonthYear = (raw: string): Date | null => {
+    const now = /^now$/i.test(raw);
+    if (now) return new Date();
+
+    // e.g. "Apr 2024", "July 2019", "2020"
+    const match = raw.match(/^([a-zA-Z]+)?\s*(\d{4})$/);
+    if (!match) return null;
+
+    const [, monthStr, yearStr] = match;
+    const year = parseInt(yearStr, 10);
+    const month = monthStr ? (MONTH_MAP[monthStr.slice(0, 3).toLowerCase()] ?? 0) : 0;
+    return new Date(year, month, 1);
+  };
+
+  const start = parseMonthYear(parts[0]);
+  const end = parseMonthYear(parts[1]);
+  if (!start || !end) return null;
+
+  return { start, end };
+}
+
+/**
+ * Calculates total unique months of experience from professional_experience[].duration,
+ * then converts to a human-readable string like "8 years 3 months".
+ *
+ * Overlapping periods are handled by collecting every month worked and de-duplicating.
+ */
+function calcYearsOfExperience(
+  experiences: Array<{ duration?: string }>,
+): string {
+  const workedMonths = new Set<string>();
+
+  for (const exp of experiences) {
+    if (!exp.duration) continue;
+    const parsed = parseDuration(exp.duration);
+    if (!parsed) continue;
+
+    const { start, end } = parsed;
+    const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+
+    while (cursor <= end) {
+      workedMonths.add(`${cursor.getFullYear()}-${cursor.getMonth()}`);
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+  }
+
+  const totalMonths = workedMonths.size;
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+
+  if (years === 0) return `${months} tháng`;
+  if (months === 0) return `${years} năm`;
+  return `${years} năm ${months} tháng`;
+}
+
+/**
+ * Builds the experience line to inject into the system prompt.
+ * Falls back to the hard-coded value if cv_content is unavailable.
+ */
+function buildExperienceLine(cv: { cv_content?: unknown } | null): string {
+  const DEFAULT = '8+ năm';
+
+  if (!cv?.cv_content) return DEFAULT;
+
+  const content = cv.cv_content as Record<string, unknown>;
+  const experiences = content['professional_experience'];
+
+  if (!Array.isArray(experiences) || experiences.length === 0) return DEFAULT;
+
+  return calcYearsOfExperience(experiences);
+}
+
 // ─── System Prompt ────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `
-Bạn là Neko — trợ lý ảo đại diện cho Nguyễn Lý Minh Mẫn, một Senior Full Stack Software Engineer với hơn 8 năm kinh nghiệm.
+function buildSystemPrompt(yearsOfExperience: string): string {
+  return `
+Bạn là Neko — trợ lý ảo đại diện cho Nguyễn Lý Minh Mẫn, một Senior Full Stack Software Engineer với ${yearsOfExperience} kinh nghiệm.
 
 DANH TÍNH — BẮT BUỘC:
 - Tên của bạn là "Neko". LUÔN LUÔN tự giới thiệu là "Neko".
@@ -28,6 +117,7 @@ CÁCH TRẢ LỜI — BẮT BUỘC:
 - Nếu không có thông tin: "Mình chưa có kinh nghiệm về mảng này".
 - Nếu HR hỏi về lương hay thời gian bắt đầu: gợi ý email nguyenlyminhman@gmail.com.
 `.trim();
+}
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
@@ -83,10 +173,13 @@ export class ChatService {
             this.githubMcp.listRepos(),
           ]);
 
-          // 7. Build context block
+          // 7. Tính số năm kinh nghiệm từ cv_content.professional_experience
+          const yearsOfExperience = buildExperienceLine(cv as { cv_content?: unknown } | null);
+
+          // 8. Build context block
           const { chatHistory, contextBlock } = this.buildContext({ history, cv, repos });
 
-          // 8. Build HR instruction block
+          // 9. Build HR instruction block
           const isGreeting = freshHrCtx
             ? this.hrMcp.isGreetingOnly(userMessage)
             : false;
@@ -95,10 +188,10 @@ export class ChatService {
             ? this.hrMcp.buildHrSystemBlock(freshHrCtx, isGreeting)
             : '';
 
-          // 9. Tạo model với system prompt đầy đủ
+          // 10. Tạo model với system prompt đầy đủ (bao gồm số năm kinh nghiệm động)
           const model = this.genAI.getGenerativeModel({
             model: 'gemini-2.5-flash',
-            systemInstruction: [SYSTEM_PROMPT, hrBlock, contextBlock]
+            systemInstruction: [buildSystemPrompt(yearsOfExperience), hrBlock, contextBlock]
               .filter(Boolean)
               .join('\n\n'),
           });
@@ -108,7 +201,7 @@ export class ChatService {
             generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
           });
 
-          // 10. Stream từng chunk về client
+          // 11. Stream từng chunk về client
           const result = await chatSession.sendMessageStream(userMessage);
 
           for await (const chunk of result.stream) {
