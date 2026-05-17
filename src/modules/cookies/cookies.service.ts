@@ -13,15 +13,28 @@ export class CookiesService {
   ) { }
 
   async createSessionId(cookieId: string): Promise<string> {
-
-    const isExist = await this.hrSessionService.checkCookie(cookieId);
-    if (isExist) {
-      return cookieId;
-    }
-
     const rs = uuidv4().toString();
-    await this.hrSessionService.createHrSessionId(rs);
-    await this.cmsConvService.createConversation(rs);
+
+    try {
+
+      const isExist = await this.hrSessionService.checkCookie(cookieId);
+
+
+      console.log('isExist', isExist);
+      console.info('isExist', isExist);
+      console.error('isExist', isExist);
+
+      if (isExist) {
+        return cookieId;
+      }
+
+      const rs = uuidv4().toString();
+      await this.hrSessionService.createHrSessionId(rs);
+      await this.cmsConvService.createConversation(rs);
+    } catch (err: any) {
+      console.log(err)
+      console.error(err)
+    }
 
     return rs;
   }
