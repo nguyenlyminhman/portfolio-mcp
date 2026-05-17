@@ -31,6 +31,6 @@ export class CookiesController {
       maxAge: 90 * 24 * 60 * 60 * 1000, // lưu cookies trong 90 ngày 96ef2dae-7d40-4f39-9cd8-2948b516d398
     });
 
-    return { message: 'Session initialized' };
+    return { message: 'Session initialized: ' + sessionId };
   }
 }
