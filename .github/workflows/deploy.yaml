@@ -87,6 +87,23 @@ jobs:
 
             cd ~/apps/nekofolio-api
 
+            cat > .env << 'EOF'
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRATION_TIME=${{ secrets.JWT_EXPIRATION_TIME }}
+            JWT_PRIVATE_KEY=${{ secrets.JWT_PRIVATE_KEY }}
+            JWT_PUBLIC_KEY=${{ secrets.JWT_PUBLIC_KEY }}
+            
+            GOOGLE_GENAI_API_KEY=${{ secrets.GOOGLE_GENAI_API_KEY }}
+            SERPER_API_KEY=${{ secrets.SERPER_API_KEY }}
+            
+            NODE_ENV=production
+            ENABLE_SWAGGER=true
+            PORT=3001
+            API_VERSION=v1
+            
+            EOF
+
             echo "=== Directory structure ==="
             find . -name "main.js" 2>/dev/null || echo "main.js not found!"
             ls -la
