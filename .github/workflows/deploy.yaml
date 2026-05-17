@@ -1,33 +1,22 @@
-# Pre-Condition
-
-# Install Node.js (using NVM is safest)
-# curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-# source ~/.bashrc
-# nvm install 20 # Or your preferred version
-
-# Install PM2 globally
-# npm install -g pm2
-
-# Create the app directory
-# mkdir -p ~/apps/nekofolio-api
-
 name: Deploy Nekofolio - Production Standard
 
 on:
   push:
     branches: [ main ]
-     # Chỉ trigger khi PR vào main được merge
   pull_request:
-    branches:
-      - main
-    types:
-      - closed
-  
+    branches: [ main ]
+    types: [ closed ]
 
 jobs:
   # --- GIAI ĐOẠN CI: BUILD & TEST ---
   ci-build:
     runs-on: ubuntu-latest
+
+    # Chỉ chạy khi push vào main, hoặc khi PR được merge vào main
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -38,12 +27,15 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - name: Install & Build
-        run: |
-          npm ci
-          npm run build
-          
-      # [Optional] Nên upload artifact để job CD tải về, tránh việc build lại
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -52,17 +44,17 @@ jobs:
             dist/
             package.json
             package-lock.json
+          retention-days: 1
 
   # --- GIAI ĐOẠN CD: DEPLOY VỚI APPROVAL ---
   cd-deploy:
     needs: ci-build
     runs-on: ubuntu-latest
-    
-    # KÍCH HOẠT CHUẨN ENTERPRISE TẠI ĐÂY
-    environment: 
-      name: production # Tên môi trường bạn tạo trong Settings > Environments
-      url: https://man-nguyen.com # (Tùy chọn) Hiện link app trong tab Actions
-    
+
+    environment:
+      name: production
+      url: https://man-nguyen.com
+
     steps:
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
@@ -85,7 +77,25 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
+
             cd ~/apps/nekofolio-api
-            npm install --omit=dev 
-            pm2 delete nekofolio-api || true
-            pm2 start dist/main.js --name nekofolio-api
+
+            echo "📦 Installing production dependencies..."
+            npm install --omit=dev
+
+            echo "🔄 Reloading application..."
+            pm2 reload nekofolio-api || pm2 start dist/main.js --name nekofolio-api
+
+            echo "⏳ Waiting for app to be ready..."
+            sleep 3
+
+            echo "🏥 Health check..."
+            curl -sf http://localhost:3000/health || {
+              echo "❌ Health check failed! Rolling back..."
+              pm2 logs nekofolio-api --lines 30 --nostream
+              exit 1
+            }
+
+            echo "✅ Deploy successful!"
+            pm2 status nekofolio-api
