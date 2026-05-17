@@ -101,6 +101,8 @@ jobs:
               PORT=3001 pm2 start dist/src/main.js --name nekofolio-api
             fi
 
+            pm2 save
+
             echo "Waiting for app to be ready..."
             sleep 3
 
