@@ -70,6 +70,8 @@ async function bootstrap(): Promise<NestExpressApplication> {
   if (serverConfig.swaggerEnabled) {
     SwaggerConfig(app);
   }
+  console.log(process.env.JWT_SECRET);
+  console.log('port', port);
 
   await app.listen(port);
 
