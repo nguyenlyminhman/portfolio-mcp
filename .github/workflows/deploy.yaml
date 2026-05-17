@@ -112,7 +112,7 @@ jobs:
             cat .env | grep JWT_SECRET || true
 
             echo "=== Install production dependencies ==="
-            npm ci --omit=dev
+            npm install --omit=dev
 
             echo "=== Verify build output ==="
             ls -la
