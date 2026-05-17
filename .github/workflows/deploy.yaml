@@ -98,7 +98,7 @@ jobs:
             if pm2 describe nekofolio-api > /dev/null 2>&1; then
               pm2 reload nekofolio-api
             else
-              pm2 start src/dist/main.js --name nekofolio-api
+              pm2 start dist/src/main.js --name nekofolio-api
             fi
 
             echo "Waiting for app to be ready..."
