@@ -1,20 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { DbConnectService } from './modules/db-connect/db-connect.service';
 
 @Injectable()
 export class AppService {
 
-  constructor(private readonly db: DbConnectService) {
+  constructor() {
 
   }
-  async getHealthCheck(): Promise<string> {
-    try {
-      console.log('check +>>>>>>>>>>>>>>>>>,', process.env.JWT_SECRET);
-      const ts = await this.db.hr_sessions.count();
-      console.log('count +db,', ts);
-    } catch (err) {
-      console.log(err)
-    }
+  getHealthCheck(): string {
+    console.log('check +>>>>>>>>>>>>>>>>>,', process.env.JWT_SECRET);
     return 'Health check...';
   }
 }

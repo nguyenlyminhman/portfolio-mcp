@@ -33,4 +33,11 @@ export class CookiesController {
 
     return { message: 'Session initialized: ' + sessionId };
   }
+
+  @Public()
+  @Post('/ss')
+  async getSS(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    const  dd = await this.cookiesService.getSs();
+    return { message: 'count: ' + dd };
+  }
 }
