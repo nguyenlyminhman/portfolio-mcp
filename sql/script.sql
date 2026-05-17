@@ -83,7 +83,7 @@ CREATE TABLE public.messages (
 	 created_at timestamp NOT null,
 	 used_token  int4 DEFAULT 0 NOT NULL,
 	CONSTRAINT messages_pk PRIMARY KEY (id)
-)
+);
 -- Index: load messages theo ngày (Admin scroll, chatbot lấy history)
 CREATE INDEX idx_messages_conversation_date ON messages (conversation_id, created_at DESC);
 

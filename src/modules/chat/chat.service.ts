@@ -204,6 +204,17 @@ export class ChatService {
           // 11. Stream từng chunk về client
           const result = await chatSession.sendMessageStream(userMessage);
 
+          // const data = await result.response;
+
+    // usageMetadata: {
+    // promptTokenCount: 5665,
+    // candidatesTokenCount: 38,
+    // totalTokenCount: 6685,
+    // promptTokensDetails: [ [Object] ],
+    // thoughtsTokenCount: 982,
+    // serviceTier: 'standard'
+  // },
+
           for await (const chunk of result.stream) {
             const text = chunk.text();
             if (text) {
@@ -211,6 +222,10 @@ export class ChatService {
               subscriber.next({ data: { chunk: text } });
             }
           }
+
+          // res 
+          
+           
 
           subscriber.next({ data: { done: true, fullReply } });
           subscriber.complete();
