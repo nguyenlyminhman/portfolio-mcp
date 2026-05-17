@@ -45,6 +45,7 @@ jobs:
           path: |
             dist/
             generated/
+            ecosystem.config.js
             package.json
             package-lock.json
           retention-days: 1
@@ -73,7 +74,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/,generated/,package.json,package-lock.json"
+          source: "dist/,generated/,ecosystem.config.js,package.json,package-lock.json"
           target: "~/apps/nekofolio-api"
 
       - name: Restart Application via SSH
@@ -87,48 +88,46 @@ jobs:
 
             cd ~/apps/nekofolio-api
 
-            cat > .env << 'EOF'
+            echo "=== Tạo file .env ==="
+            cat > .env << 'ENVEOF'
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_EXPIRATION_TIME=${{ secrets.JWT_EXPIRATION_TIME }}
             JWT_PRIVATE_KEY=${{ secrets.JWT_PRIVATE_KEY }}
             JWT_PUBLIC_KEY=${{ secrets.JWT_PUBLIC_KEY }}
-            
             GOOGLE_GENAI_API_KEY=${{ secrets.GOOGLE_GENAI_API_KEY }}
             SERPER_API_KEY=${{ secrets.SERPER_API_KEY }}
-            
             NODE_ENV=production
             ENABLE_SWAGGER=true
             PORT=3001
             API_VERSION=v1
-            
-            EOF
+            ENVEOF
 
             echo "=== Directory structure ==="
             find . -name "main.js" 2>/dev/null || echo "main.js not found!"
             ls -la
 
-            echo "Installing production dependencies..."
+            echo "=== Installing production dependencies ==="
             npm install --omit=dev
 
-            echo "Starting/Reloading application..."
+            echo "=== Starting/Reloading application ==="
             if pm2 describe nekofolio-api > /dev/null 2>&1; then
-              PORT=3001 pm2 reload nekofolio-api --update-env
+              pm2 reload ecosystem.config.js --update-env
             else
-              PORT=3001 pm2 start dist/src/main.js --name nekofolio-api
+              pm2 start ecosystem.config.js
             fi
 
             pm2 save
 
-            echo "Waiting for app to be ready..."
+            echo "=== Waiting for app to be ready ==="
             sleep 3
 
-            echo "Health check..."
+            echo "=== Health check ==="
             curl -sf http://localhost:3001/api/v1/health || {
               echo "Health check failed! Printing logs..."
               pm2 logs nekofolio-api --lines 30 --nostream
               exit 1
             }
 
-            echo "Deploy successful!"
+            echo "=== Deploy successful! ==="
             pm2 status nekofolio-api
