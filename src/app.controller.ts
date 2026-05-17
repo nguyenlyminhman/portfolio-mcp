@@ -12,7 +12,8 @@ export class AppController {
 
   @Public()
   @Get()
-  getHello(): string {
-    return this.appService.getHealthCheck();
+  async getHello(): Promise<string> {
+    const a = await this.appService.getHealthCheck();
+    return a;
   }
 }
