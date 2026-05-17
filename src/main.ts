@@ -31,7 +31,7 @@ async function bootstrap(): Promise<NestExpressApplication> {
 
   // 3. CORS
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: 'http://man-nguyen.com',
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Accept, Authorization',
