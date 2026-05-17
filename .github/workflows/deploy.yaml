@@ -75,13 +75,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: |
-            dist/
-            prisma/
-            generated/
-            ecosystem.config.js
-            package.json
-            package-lock.json
+          source: "dist/,prisma/,generated/,ecosystem.config.js,package.json,package-lock.json"
           target: /home/ec2-user/apps/nekofolio-api
 
       - name: Deploy application
