@@ -96,16 +96,16 @@ jobs:
 
             echo "Starting/Reloading application..."
             if pm2 describe nekofolio-api > /dev/null 2>&1; then
-              pm2 reload nekofolio-api
+              PORT=3001 pm2 reload nekofolio-api --update-env
             else
-              pm2 start dist/src/main.js --name nekofolio-api
+              PORT=3001 pm2 start dist/src/main.js --name nekofolio-api
             fi
 
             echo "Waiting for app to be ready..."
             sleep 3
 
             echo "Health check..."
-            curl -sf http://localhost:3000/health || {
+            curl -sf http://localhost:3001/api/v1/health || {
               echo "Health check failed! Printing logs..."
               pm2 logs nekofolio-api --lines 30 --nostream
               exit 1
