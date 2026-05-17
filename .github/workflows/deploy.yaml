@@ -1,0 +1,91 @@
+# Pre-Condition
+
+# Install Node.js (using NVM is safest)
+# curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+# source ~/.bashrc
+# nvm install 20 # Or your preferred version
+
+# Install PM2 globally
+# npm install -g pm2
+
+# Create the app directory
+# mkdir -p ~/apps/nekofolio-api
+
+name: Deploy Nekofolio - Production Standard
+
+on:
+  push:
+    branches: [ main ]
+     # Chỉ trigger khi PR vào main được merge
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+  
+
+jobs:
+  # --- GIAI ĐOẠN CI: BUILD & TEST ---
+  ci-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+          
+      # [Optional] Nên upload artifact để job CD tải về, tránh việc build lại
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files
+          path: |
+            dist/
+            package.json
+            package-lock.json
+
+  # --- GIAI ĐOẠN CD: DEPLOY VỚI APPROVAL ---
+  cd-deploy:
+    needs: ci-build
+    runs-on: ubuntu-latest
+    
+    # KÍCH HOẠT CHUẨN ENTERPRISE TẠI ĐÂY
+    environment: 
+      name: production # Tên môi trường bạn tạo trong Settings > Environments
+      url: https://man-nguyen.com # (Tùy chọn) Hiện link app trong tab Actions
+    
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
+
+      - name: Deploy to EC2 via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist/,package.json,package-lock.json"
+          target: "~/apps/nekofolio-api"
+
+      - name: Restart Application via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/apps/nekofolio-api
+            npm install --omit=dev 
+            pm2 delete nekofolio-api || true
+            pm2 start dist/main.js --name nekofolio-api
