@@ -17,18 +17,16 @@ export class CookiesController {
   @Public()
   @Post('/init')
   async initSession(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
-    let sessionId = null;
     const existingSessionId = request.cookies?.['chat_session_id'];
-    if (existingSessionId) {
-      sessionId = await this.cookiesService.createSessionId(existingSessionId);
-    }
+
+    const sessionId = await this.cookiesService.createSessionId(existingSessionId ?? null);
 
     response.cookie('chat_session_id', sessionId, {
       path: '/',
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
-      maxAge: 90 * 24 * 60 * 60 * 1000, // lưu cookies trong 90 ngày 96ef2dae-7d40-4f39-9cd8-2948b516d398
+      maxAge: 90 * 24 * 60 * 60 * 1000,
     });
 
     return { message: 'Session initialized: ' + sessionId };
@@ -37,7 +35,7 @@ export class CookiesController {
   @Public()
   @Get('/ss')
   async getSS() {
-    const  dd = await this.cookiesService.getSs();
+    const dd = await this.cookiesService.getSs();
     return { message: 'count: ' + dd };
   }
 }

@@ -12,31 +12,25 @@ export class CookiesService {
     private readonly cmsConvService: CmsConvService
   ) { }
 
-  async createSessionId(cookieId: string): Promise<string> {
-    const rs = uuidv4().toString();
+  async createSessionId(cookieId: string | null): Promise<string> {
+  const newId = uuidv4().toString();
 
-    try {
-
+  try {
+    if (cookieId) {
       const isExist = await this.hrSessionService.checkCookie(cookieId);
-
-
-      console.log('isExist', isExist);
-      console.info('isExist', isExist);
-      console.error('isExist', isExist);
-
       if (isExist) {
         return cookieId;
       }
-
-      await this.hrSessionService.createHrSessionId(rs);
-      await this.cmsConvService.createConversation(rs);
-    } catch (err: any) {
-      console.log(err)
-      console.error(err)
     }
 
-    return rs;
+    await this.hrSessionService.createHrSessionId(newId);
+    await this.cmsConvService.createConversation(newId);
+  } catch (err: any) {
+    console.error(err);
   }
+
+  return newId;
+}
 
   async getSs(): Promise<any> {
     let ts = 10000;
