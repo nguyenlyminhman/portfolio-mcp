@@ -23,7 +23,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install 
+        run: npm install
 
       - name: Generate Prisma Client
         run: npx prisma generate
@@ -71,20 +71,27 @@ jobs:
           echo "=== Artifact structure ==="
           find . -type f | head -50
 
-      - name: Copy files to EC2
+      - name: Package artifact for transfer
+        run: |
+          tar -czf /tmp/nekofolio-api.tar.gz \
+            dist/ \
+            prisma/ \
+            generated/ \
+            ecosystem.config.js \
+            package.json \
+            package-lock.json
+
+      - name: Copy package to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: |
-            dist/
-            prisma/
-            generated/
-            ecosystem.config.js
-            package.json
-            package-lock.json
-          target: /home/ec2-user/apps/nekofolio-api
+          # scp-action nhận source là chuỗi đơn, không hỗ trợ multiline list.
+          # Giải pháp: tar trước trên runner, copy 1 file duy nhất, extract trên EC2.
+          source: /tmp/nekofolio-api.tar.gz
+          target: /tmp/
+          strip_components: 0
 
       - name: Deploy application
         uses: appleboy/ssh-action@v1.0.3
@@ -108,6 +115,11 @@ jobs:
             set -e
 
             APP_DIR=/home/ec2-user/apps/nekofolio-api
+
+            echo "=== Extract package ==="
+            mkdir -p $APP_DIR
+            tar -xzf /tmp/nekofolio-api.tar.gz -C $APP_DIR
+            rm -f /tmp/nekofolio-api.tar.gz
 
             echo "=== Go to app directory ==="
             cd $APP_DIR
