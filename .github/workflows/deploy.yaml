@@ -27,6 +27,14 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      - name: Validate lock file is in sync
+        run: |
+          if ! npm ci --dry-run 2>/dev/null; then
+            echo "❌ package-lock.json is out of sync with package.json"
+            echo "👉 Run 'npm install' locally and commit the updated lock file"
+            exit 1
+          fi
+
       - name: Install Dependencies
         run: npm ci
 
