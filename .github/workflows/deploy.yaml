@@ -12,7 +12,6 @@ jobs:
   ci-build:
     runs-on: ubuntu-latest
 
-    # Chỉ chạy khi push vào main, hoặc khi PR được merge vào main
     if: |
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
@@ -65,6 +64,9 @@ jobs:
         with:
           name: build-files
 
+      - name: Debug artifact structure
+        run: find . -type f | head -30
+
       - name: Deploy to EC2 via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -85,11 +87,19 @@ jobs:
 
             cd ~/apps/nekofolio-api
 
+            echo "=== Directory structure ==="
+            find . -name "main.js" 2>/dev/null || echo "main.js not found!"
+            ls -la
+
             echo "Installing production dependencies..."
             npm install --omit=dev
 
-            echo "Reloading application..."
-            pm2 reload nekofolio-api || pm2 start dist/main.js --name nekofolio-api
+            echo "Starting/Reloading application..."
+            if pm2 describe nekofolio-api > /dev/null 2>&1; then
+              pm2 reload nekofolio-api
+            else
+              pm2 start dist/main.js --name nekofolio-api
+            fi
 
             echo "Waiting for app to be ready..."
             sleep 3
