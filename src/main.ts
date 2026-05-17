@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { LoggingInterceptor } from './interceptor/logging.interceptor';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VERSION_NEUTRAL, VersioningType } from '@nestjs/common';
 import morgan from 'morgan';
 import helmet from 'helmet';
 import { SharedModule } from './modules/shared/shared.module';
@@ -13,33 +13,41 @@ import { SwaggerConfig } from './config/swagger';
 import { GlobalExceptionFilter } from './filter/global.exception.filter';
 import cookieParser from 'cookie-parser';
 
-
 async function bootstrap(): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
     new ExpressAdapter(),
-    // { cors: true }
   );
 
   const serverConfig = app.select(SharedModule).get(ServerConfigService);
   const { port } = serverConfig.serverPort;
 
+  // 1. Static assets
   app.useStaticAssets(join(__dirname, '..', 'public'));
+
+  // 2. Security & cookie middleware
   app.use(helmet());
-  app.use(cookieParser()); // Thêm middleware cookie-parser
+  app.use(cookieParser());
 
-  app.useGlobalInterceptors(new LoggingInterceptor());
-  app.useGlobalFilters(new GlobalExceptionFilter());
-
+  // 3. CORS
   app.enableCors({
-    // Thay bằng domain chính xác của bạn, không dùng '*'
-    origin:  'http://localhost:3000',
-    credentials: true, // Cho phép nhận và gửi Cookie
+    origin: 'http://localhost:3000',
+    credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
-  app.setGlobalPrefix('/api');
+  // 4. Global prefix
+  app.setGlobalPrefix('api');
+
+  // 5. Versioning
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+    prefix: 'v',  // /api/v1/
+  });
+
+  // 6. Global pipes
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -50,17 +58,18 @@ async function bootstrap(): Promise<NestExpressApplication> {
       },
     }),
   );
+
+  // 7. Global interceptors & filters
+  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalFilters(new GlobalExceptionFilter());
+
+  // 8. Logger
   app.use(morgan(serverConfig.nodeEnv === 'production' ? 'combined' : 'dev'));
-  app.enableVersioning();
-  // Microservice config here
 
-
-  // Setup swagger
+  // 9. Swagger (sau cùng để nhận đủ metadata)
   if (serverConfig.swaggerEnabled) {
     SwaggerConfig(app);
   }
-  // Set global prefix for endpoint
-
 
   await app.listen(port);
 
@@ -68,4 +77,3 @@ async function bootstrap(): Promise<NestExpressApplication> {
 }
 
 bootstrap();
-
