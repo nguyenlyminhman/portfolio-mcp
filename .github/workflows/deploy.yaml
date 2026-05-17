@@ -45,11 +45,12 @@ jobs:
           path: |
             dist/
             generated/
+            ecosystem.config.js
             package.json
             package-lock.json
           retention-days: 1
 
-  # --- GIAI ĐOẠN CD: DEPLOY VỚI APPROVAL ---
+  # --- GIAI ĐOẠN CD: DEPLOY ---
   cd-deploy:
     needs: ci-build
     runs-on: ubuntu-latest
@@ -73,7 +74,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/,generated/,package.json,package-lock.json"
+          source: "dist/,generated/,ecosystem.config.js,package.json,package-lock.json"
           target: "~/apps/nekofolio-api"
 
       - name: Restart Application via SSH
@@ -95,16 +96,17 @@ jobs:
             npm install --omit=dev
 
             echo "Starting/Reloading application..."
+
             if pm2 describe nekofolio-api > /dev/null 2>&1; then
-              PORT=3001 pm2 reload nekofolio-api --update-env
+              pm2 reload ecosystem.config.js --env production --update-env
             else
-              PORT=3001 pm2 start dist/src/main.js --name nekofolio-api
+              pm2 start ecosystem.config.js --env production
             fi
 
             pm2 save
 
             echo "Waiting for app to be ready..."
-            sleep 3
+            sleep 5
 
             echo "Health check..."
             curl -sf http://localhost:3001/api/v1/health || {
