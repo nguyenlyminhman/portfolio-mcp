@@ -28,7 +28,6 @@ export class CookiesService {
         return cookieId;
       }
 
-      const rs = uuidv4().toString();
       await this.hrSessionService.createHrSessionId(rs);
       await this.cmsConvService.createConversation(rs);
     } catch (err: any) {
@@ -37,5 +36,17 @@ export class CookiesService {
     }
 
     return rs;
+  }
+
+  async getSs(): Promise<any> {
+    let ts = 10000;
+    try {
+      console.log('check +>>>>>>>>>>>>>>>>>,', process.env.JWT_SECRET);
+      ts = await this.db.hr_sessions.count();
+      console.log('count +db,', ts);
+    } catch (err) {
+      console.log(err)
+    }
+    return ts;
   }
 }

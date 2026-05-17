@@ -1,4 +1,4 @@
-import { Controller, Post, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { EApiPath, VERSION_1 } from 'src/objects/enum/EApiPath.enum';
 import { Response } from 'express';
@@ -35,8 +35,8 @@ export class CookiesController {
   }
 
   @Public()
-  @Post('/ss')
-  async getSS(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+  @Get('/ss')
+  async getSS() {
     const  dd = await this.cookiesService.getSs();
     return { message: 'count: ' + dd };
   }
