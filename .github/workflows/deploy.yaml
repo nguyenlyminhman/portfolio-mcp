@@ -1,56 +1,55 @@
-name: Deploy Nekofolio - Production Standard
+name: Deploy Nekofolio API - Production
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-    types: [ closed ]
+    branches:
+      - main
 
 jobs:
-  # --- GIAI ĐOẠN CI: BUILD & TEST ---
+  # =========================
+  # CI: BUILD & TEST
+  # =========================
   ci-build:
     runs-on: ubuntu-latest
 
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
-
     steps:
-      - name: Checkout Code
+      - name: Checkout source code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: npm
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install dependencies
+        run: npm install  
 
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Run Tests
+      - name: Run tests
         run: npm test
 
-      - name: Build
+      - name: Build application
         run: npm run build
 
-      - name: Upload Build Artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-files
+          name: nekofolio-api-build
+          retention-days: 3
           path: |
             dist/
+            prisma/
             generated/
             ecosystem.config.js
             package.json
             package-lock.json
-          retention-days: 1
 
-  # --- GIAI ĐOẠN CD: DEPLOY VỚI APPROVAL ---
+  # =========================
+  # CD: DEPLOY TO EC2
+  # =========================
   cd-deploy:
     needs: ci-build
     runs-on: ubuntu-latest
@@ -60,74 +59,121 @@ jobs:
       url: https://man-nguyen.com
 
     steps:
-      - name: Download Build Artifact
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: build-files
+          name: nekofolio-api-build
 
-      - name: Debug artifact structure
-        run: find . -type f | head -30
+      - name: Debug artifact
+        run: |
+          echo "=== Artifact structure ==="
+          find . -type f | head -50
 
-      - name: Deploy to EC2 via SCP
+      - name: Package artifact for transfer
+        # scp-action (drone-scp) không hỗ trợ multiline source list.
+        # Tar thành 1 file duy nhất trên runner, copy qua, extract trên EC2.
+        run: |
+          tar -czf /tmp/nekofolio-api.tar.gz \
+            dist/ \
+            prisma/ \
+            generated/ \
+            ecosystem.config.js \
+            package.json \
+            package-lock.json
+
+      - name: Copy package to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/,generated/,ecosystem.config.js,package.json,package-lock.json"
-          target: "~/apps/nekofolio-api"
+          source: /tmp/nekofolio-api.tar.gz
+          target: /tmp/
+          strip_components: 0
 
-      - name: Restart Application via SSH
+      - name: Deploy application
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION_TIME: ${{ secrets.JWT_EXPIRATION_TIME }}
+          JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
+          GOOGLE_GENAI_API_KEY: ${{ secrets.GOOGLE_GENAI_API_KEY }}
+          SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: DATABASE_URL,JWT_SECRET,JWT_EXPIRATION_TIME,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,GOOGLE_GENAI_API_KEY,SERPER_API_KEY
           script: |
             set -e
 
-            cd ~/apps/nekofolio-api
+            APP_DIR=/home/ec2-user/apps/nekofolio-api
 
-            echo "=== Tạo file .env ==="
-            cat > .env << 'ENVEOF'
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            JWT_EXPIRATION_TIME=${{ secrets.JWT_EXPIRATION_TIME }}
-            JWT_PRIVATE_KEY=${{ secrets.JWT_PRIVATE_KEY }}
-            JWT_PUBLIC_KEY=${{ secrets.JWT_PUBLIC_KEY }}
-            GOOGLE_GENAI_API_KEY=${{ secrets.GOOGLE_GENAI_API_KEY }}
-            SERPER_API_KEY=${{ secrets.SERPER_API_KEY }}
-            NODE_ENV=production
-            ENABLE_SWAGGER=true
-            PORT=3001
-            API_VERSION=v1
-            ENVEOF
+            echo "=== Extract package ==="
+            mkdir -p $APP_DIR
+            tar -xzf /tmp/nekofolio-api.tar.gz -C $APP_DIR
+            rm -f /tmp/nekofolio-api.tar.gz
 
-            echo "=== Directory structure ==="
-            find . -name "main.js" 2>/dev/null || echo "main.js not found!"
-            ls -la
+            echo "=== Go to app directory ==="
+            cd $APP_DIR
 
-            echo "=== Installing production dependencies ==="
+            echo "=== Create .env ==="
+            # Dùng printf thay heredoc để tránh leading spaces bị ghi vào .env.
+            # Heredoc trong YAML block script giữ nguyên indent của YAML,
+            # khiến mỗi dòng .env có spaces thừa → dotenv không parse được.
+            printf '%s\n' \
+              "DATABASE_URL=$DATABASE_URL" \
+              "JWT_SECRET=$JWT_SECRET" \
+              "JWT_EXPIRATION_TIME=$JWT_EXPIRATION_TIME" \
+              "JWT_PRIVATE_KEY=$JWT_PRIVATE_KEY" \
+              "JWT_PUBLIC_KEY=$JWT_PUBLIC_KEY" \
+              "GOOGLE_GENAI_API_KEY=$GOOGLE_GENAI_API_KEY" \
+              "SERPER_API_KEY=$SERPER_API_KEY" \
+              "NODE_ENV=production" \
+              "ENABLE_SWAGGER=true" \
+              "PORT=3001" \
+              "API_VERSION=v1" \
+            > .env
+
+            echo "=== Verify .env (chỉ kiểm tra key, không in giá trị) ==="
+            grep -q "^JWT_SECRET=." .env   && echo "JWT_SECRET: OK"   || echo "JWT_SECRET: MISSING"
+            grep -q "^DATABASE_URL=." .env && echo "DATABASE_URL: OK" || echo "DATABASE_URL: MISSING"
+
+            echo "=== Install production dependencies ==="
             npm install --omit=dev
 
-            echo "=== Starting/Reloading application ==="
-            if pm2 describe nekofolio-api > /dev/null 2>&1; then
-              pm2 reload ecosystem.config.js --update-env
-            else
-              pm2 start ecosystem.config.js
-            fi
+            echo "=== Verify build output ==="
+            ls -la
+            ls -la dist || true
 
+            echo "=== Verify dotenv loading ==="
+            node -e "require('dotenv').config(); console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET)"
+
+            echo "=== Deploy with zero-downtime reload ==="
+            pm2 startOrReload ecosystem.config.js --update-env
+
+            echo "=== Save PM2 process list ==="
             pm2 save
 
-            echo "=== Waiting for app to be ready ==="
-            sleep 3
+            echo "=== Wait for app startup ==="
+            sleep 5
 
-            echo "=== Health check ==="
+            echo "=== PM2 Status ==="
+            pm2 status
+
+            echo "=== Health Check ==="
             curl -sf http://localhost:3001/api/v1/health || {
-              echo "Health check failed! Printing logs..."
-              pm2 logs nekofolio-api --lines 30 --nostream
+              echo "Health check failed"
+
+              echo "=== PM2 Logs ==="
+              pm2 logs nekofolio-api --lines 100 --nostream
+
+              echo "=== Rollback ==="
+              pm2 reload nekofolio-api || true
+
               exit 1
             }
 
-            echo "=== Deploy successful! ==="
-            pm2 status nekofolio-api
+            echo "=== Deploy success ==="
