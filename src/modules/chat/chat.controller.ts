@@ -19,6 +19,13 @@ export class ChatController {
   chatStream(@Query('message') message: string, @Req() req: Request): Observable<MessageEvent> {
     const sessionId = req.cookies['chat_session_id'] || null;
 
+    console.log('chat_session_id', sessionId);
+
+    console.log('-----------');
+    
+    console.log('req', req);
+    
+
     return this.chatService.chatStream(
       sessionId,
       message,
