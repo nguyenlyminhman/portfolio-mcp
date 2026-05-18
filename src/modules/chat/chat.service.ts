@@ -131,6 +131,7 @@ export class ChatService {
     private readonly historyMcp: McpChatHistoryService,
     private readonly hrMcp: McpHrService,
   ) {
+    console.log('GOOGLE_GENAI_API_KEY ', process.env.GOOGLE_GENAI_API_KEY)
     this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
   }
 
@@ -229,7 +230,10 @@ export class ChatService {
 
           subscriber.next({ data: { done: true, fullReply } });
           subscriber.complete();
-        } catch (err) {
+        } catch (err: any) {
+
+          console.log('>>>>>> err <<<<<< ', err)
+
           let errorMessage = `Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;          
           const isVn = AppUtil.isVietnamese(userMessage);
 
