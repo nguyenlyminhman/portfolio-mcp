@@ -24,7 +24,7 @@ export class CookiesController {
     response.cookie('chat_session_id', sessionId, {
       path: '/',
       httpOnly: true,
-      // secure: true,
+      secure: true,
       sameSite: 'lax',
       maxAge: 90 * 24 * 60 * 60 * 1000,
     });
