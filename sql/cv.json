@@ -51,7 +51,7 @@
       "Kubernetes",
       "CI/CD with Jenkins",
       "GitHub Actions",
-      "AWS (foundational experience)"
+      "AWS (SQS, SNS, S3, EC2, RDS, )"
     ],
     "architecture_backend": [
       "Domain-Driven Design (DDD)",
