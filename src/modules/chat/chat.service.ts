@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, MessageEvent } from '@nestjs/common';
 import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 import { Observable } from 'rxjs';
-import { MessageEvent } from '@nestjs/common';
 import { McpCvService } from '../mcp-cv/mcp-cv.service';
 import { McpGithubService } from '../mcp-github/mcp-github.service';
 import { McpChatHistoryService } from '../mcp-chat-history/mcp-chat-history.service';
@@ -102,28 +101,81 @@ function buildExperienceLine(cv: { cv_content?: unknown } | null): string {
 function buildSystemPrompt(yearsOfExperience: string): string {
   return `
 Bạn là Neko — trợ lý ảo đại diện cho Nguyễn Lý Minh Mẫn, một Senior Full Stack Software Engineer với ${yearsOfExperience} kinh nghiệm.
-
+ 
 DANH TÍNH — BẮT BUỘC:
-- Tên của bạn là "Neko". LUÔN LUÔN tự giới thiệu là "Neko".
+- Tên của bạn là "Neko".
+- Chỉ giới thiệu tên khi HR hỏi trực tiếp ("bạn tên gì?") hoặc ở tin nhắn chào hỏi đầu tiên.
+- TUYỆT ĐỐI KHÔNG lặp lại câu "Chào [tên]! Mình là Neko." ở mỗi reply — chỉ chào đúng 1 lần khi bắt đầu cuộc trò chuyện.
 - TUYỆT ĐỐI KHÔNG dùng bất kỳ tên nào khác (Manos, Mẫn, AI, Bot...).
-- Nếu HR hỏi tên bạn là gì → trả lời: "Mình là Manos".
-
+- Nếu HR hỏi tên bạn là gì → trả lời: "Mình là Neko".
+ 
 CÁCH TRẢ LỜI — BẮT BUỘC:
+- KHÔNG mở đầu reply bằng "Chào [tên]! Mình là Neko." — đây là lỗi nghiêm trọng, cần tuyệt đối tránh.
 - KHÔNG bao giờ tóm tắt hoặc nhắc lại nội dung của tin nhắn trước đó.
 - KHÔNG bắt đầu câu trả lời bằng cách lặp lại câu hỏi hay câu trả lời cũ.
 - Trả lời THẲNG vào câu hỏi hiện tại — ngắn gọn, súc tích.
 - Xưng "mình", gọi HR bằng tên nếu đã biết, nếu chưa thì gọi là "bạn".
 - Chỉ trả lời dựa trên thông tin CV và GitHub được cung cấp, không bịa đặt.
 - Nếu không có thông tin: "Mình chưa có kinh nghiệm về mảng này".
-- Nếu HR hỏi về lương hay thời gian bắt đầu: gợi ý email nguyenlyminhman@gmail.com.
-`.trim();
+- Nếu HR hỏi về lương hay thời gian bắt đầu: gợi ý email nguyenlyminhman@gmail.com.`
+.trim();
+}
+
+
+// ─── Gemini Resilience Helpers ───────────────────────────────────────────────
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash-lite';
+const GEMINI_MAX_RETRIES = Number(process.env.GEMINI_MAX_RETRIES || 3);
+const GEMINI_QUEUE_CONCURRENCY = Number(process.env.GEMINI_QUEUE_CONCURRENCY || 2);
+const GEMINI_MIN_INTERVAL_MS = Number(process.env.GEMINI_MIN_INTERVAL_MS || 700);
+const GEMINI_MAX_RETRY_DELAY_MS = Number(process.env.GEMINI_MAX_RETRY_DELAY_MS || 8000);
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRateLimitError(err: any): boolean {
+  const status = err?.status || err?.response?.status || err?.error?.code;
+  const message = String(err?.message || err?.error?.message || '');
+  return status === 429 || message.includes('429') || message.includes('RESOURCE_EXHAUSTED');
+}
+
+function getRetryDelayMs(err: any, attempt: number): number {
+  const retryDelay = err?.errorDetails?.find?.((x: any) => x?.retryDelay)?.retryDelay;
+
+  if (typeof retryDelay === 'string') {
+    const seconds = Number(retryDelay.replace('s', ''));
+    if (!Number.isNaN(seconds)) {
+      return Math.min(seconds * 1000, GEMINI_MAX_RETRY_DELAY_MS);
+    }
+  }
+
+  const exponential = 1000 * 2 ** attempt;
+  const jitter = Math.floor(Math.random() * 300);
+  return Math.min(exponential + jitter, GEMINI_MAX_RETRY_DELAY_MS);
+}
+
+function buildBusyMessage(userMessage: string): string {
+  const isVn = AppUtil.isVietnamese(userMessage);
+
+  if (isVn) {
+    return 'Neko đang nhận hơi nhiều câu hỏi cùng lúc nên phản hồi chậm một chút. Bạn cứ hỏi tiếp nhé, mình vẫn giữ cuộc hội thoại này và sẽ trả lời ngay khi hệ thống ổn định hơn. ⚡';
+  }
+
+  return 'Neko is receiving many questions at once, so the response is a bit delayed. You can keep asking — I will keep this conversation and reply as soon as the system is stable again. ⚡';
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
   private genAI: GoogleGenerativeAI;
+
+  private static activeGeminiRequests = 0;
+  private static waitingGeminiResolvers: Array<() => void> = [];
+  private static lastGeminiRequestAt = 0;
 
   constructor(
     private readonly cvMcp: McpCvService,
@@ -131,7 +183,10 @@ export class ChatService {
     private readonly historyMcp: McpChatHistoryService,
     private readonly hrMcp: McpHrService,
   ) {
-    console.log('GOOGLE_GENAI_API_KEY ', process.env.GOOGLE_GENAI_API_KEY)
+    if (!process.env.GOOGLE_GENAI_API_KEY) {
+      throw new Error('Missing GOOGLE_GENAI_API_KEY');
+    }
+
     this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
   }
 
@@ -190,20 +245,17 @@ export class ChatService {
             : '';
 
           // 10. Tạo model với system prompt đầy đủ (bao gồm số năm kinh nghiệm động)
-          const model = this.genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash',
-            systemInstruction: [buildSystemPrompt(yearsOfExperience), hrBlock, contextBlock]
-              .filter(Boolean)
-              .join('\n\n'),
-          });
+          const systemInstruction = [buildSystemPrompt(yearsOfExperience), hrBlock, contextBlock]
+            .filter(Boolean)
+            .join('\n\n');
 
-          const chatSession = model.startChat({
-            history: chatHistory,
-            generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
+          // 11. Gọi Gemini qua queue + retry.
+          // Nếu model chính bị 429 liên tục, fallback sang Flash Lite để không làm đứt flow HR.
+          const result = await this.sendGeminiStreamWithRetry({
+            userMessage,
+            chatHistory,
+            systemInstruction,
           });
-
-          // 11. Stream từng chunk về client
-          const result = await chatSession.sendMessageStream(userMessage);
 
           // const data = await result.response;
 
@@ -231,22 +283,9 @@ export class ChatService {
           subscriber.next({ data: { done: true, fullReply } });
           subscriber.complete();
         } catch (err: any) {
+          this.logger.error('Gemini chatStream failed', err?.stack || err);
 
-          console.log('>>>>>> err <<<<<< ', err)
-
-          let errorMessage = `Neko is 'recharging' for a bit—I'll be back and ready in just a minute! ⚡`;          
-          const isVn = AppUtil.isVietnamese(userMessage);
-
-          if (isVn) {
-            errorMessage = `Neko đang 'sạc pin' một chút, 1 phút nữa mình sẽ sẵn sàng ngay! ⚡`;
-          }
-
-          if (err?.status === 429 || err?.message?.includes('429')) {
-            errorMessage = `The Free Tier's resources have their limits, but my boss's welcome is infinite. Hang with me for a minute! ⚡`;
-            if (isVn) {
-              errorMessage = `Resource của gói Free có hạn nhưng lòng mến khách của sếp mình thì vô biên. Tiếc là API Request không cho phép mình nói quá nhanh, đợi mình 1 phút nhé! ⚡`;
-            }
-          }
+          const errorMessage = buildBusyMessage(userMessage);
 
           fullReply = errorMessage;
           subscriber.next({ data: { error: true, message: errorMessage } });
@@ -258,6 +297,112 @@ export class ChatService {
         }
       })();
     });
+  }
+
+
+  private async waitForGeminiSlot(): Promise<void> {
+    if (ChatService.activeGeminiRequests >= GEMINI_QUEUE_CONCURRENCY) {
+      await new Promise<void>((resolve) => {
+        ChatService.waitingGeminiResolvers.push(resolve);
+      });
+    }
+
+    ChatService.activeGeminiRequests += 1;
+
+    const now = Date.now();
+    const diff = now - ChatService.lastGeminiRequestAt;
+
+    if (diff < GEMINI_MIN_INTERVAL_MS) {
+      await sleep(GEMINI_MIN_INTERVAL_MS - diff);
+    }
+
+    ChatService.lastGeminiRequestAt = Date.now();
+  }
+
+  private releaseGeminiSlot(): void {
+    ChatService.activeGeminiRequests = Math.max(0, ChatService.activeGeminiRequests - 1);
+
+    const next = ChatService.waitingGeminiResolvers.shift();
+    if (next) {
+      next();
+    }
+  }
+
+  private async runGeminiQueued<T>(task: () => Promise<T>): Promise<T> {
+    await this.waitForGeminiSlot();
+
+    try {
+      return await task();
+    } finally {
+      this.releaseGeminiSlot();
+    }
+  }
+
+  private createChatSession(params: {
+    modelName: string;
+    chatHistory: Content[];
+    systemInstruction: string;
+  }) {
+    const model = this.genAI.getGenerativeModel({
+      model: params.modelName,
+      systemInstruction: params.systemInstruction,
+    });
+
+    return model.startChat({
+      history: params.chatHistory,
+      generationConfig: {
+        maxOutputTokens: 1024,
+        temperature: 0.2,
+      },
+    });
+  }
+
+  private async sendGeminiStreamWithRetry(params: {
+    userMessage: string;
+    chatHistory: Content[];
+    systemInstruction: string;
+  }) {
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt++) {
+      try {
+        return await this.runGeminiQueued(async () => {
+          const chatSession = this.createChatSession({
+            modelName: GEMINI_MODEL,
+            chatHistory: params.chatHistory,
+            systemInstruction: params.systemInstruction,
+          });
+
+          return chatSession.sendMessageStream(params.userMessage);
+        });
+      } catch (err: any) {
+        lastError = err;
+
+        if (!isRateLimitError(err) || attempt === GEMINI_MAX_RETRIES) {
+          break;
+        }
+
+        const delayMs = getRetryDelayMs(err, attempt);
+        this.logger.warn(`Gemini 429. Retry ${attempt + 1}/${GEMINI_MAX_RETRIES} after ${delayMs}ms`);
+        await sleep(delayMs);
+      }
+    }
+
+    if (isRateLimitError(lastError) && GEMINI_FALLBACK_MODEL) {
+      this.logger.warn(`Gemini primary model exhausted. Falling back to ${GEMINI_FALLBACK_MODEL}`);
+
+      return this.runGeminiQueued(async () => {
+        const fallbackChatSession = this.createChatSession({
+          modelName: GEMINI_FALLBACK_MODEL,
+          chatHistory: params.chatHistory,
+          systemInstruction: params.systemInstruction,
+        });
+
+        return fallbackChatSession.sendMessageStream(params.userMessage);
+      });
+    }
+
+    throw lastError;
   }
 
   // ── History ────────────────────────────────────────────────────────────────
