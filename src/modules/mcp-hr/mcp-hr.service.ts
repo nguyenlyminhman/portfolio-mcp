@@ -224,37 +224,37 @@ export class McpHrService {
     if (isGreeting && !isProfileComplete && !profile.hasRefusedInfo) {
       const alreadyHasName = !!profile.name;
       return `
-## TRẠNG THÁI HR: LỜI CHÀO MỞ ĐẦU
+          ## TRẠNG THÁI HR: LỜI CHÀO MỞ ĐẦU
 
-HR vừa gửi một lời chào hỏi đơn giản, chưa cung cấp thông tin.
+          HR vừa gửi một lời chào hỏi đơn giản, chưa cung cấp thông tin.
 
-HƯỚNG DẪN — **BẮT BUỘC TUÂN THỦ**:
-- Giới thiệu bản thân là "Neko" (KHÔNG phải "Mẫn").
-- Chào lại thật tự nhiên, ấm áp.
-- **CHỈ hỏi tên HR** — TUYỆT ĐỐI KHÔNG hỏi công ty ở tin nhắn đầu tiên này.
-- Hỏi công ty là bước tiếp theo, sau khi đã biết tên.
-${
-  alreadyHasName
-    ? `- Mình đã biết tên HR là ${profile.name}. Chào bằng tên, rồi hỏi nhẹ về công ty.`
-    : `- Ví dụ câu trả lời: "Chào bạn! Mình là Neko 😊 Rất vui được gặp bạn. Cho mình hỏi bạn tên gì để mình tiện xưng hô nhé?"`
-}
-- Câu ngắn, thân thiện, KHÔNG formal, KHÔNG hỏi nhiều thứ cùng lúc.
-      `.trim();
+          HƯỚNG DẪN — **BẮT BUỘC TUÂN THỦ**:
+          - Giới thiệu bản thân là "Neko" (KHÔNG phải "Mẫn").
+          - Chào lại thật tự nhiên, ấm áp.
+          - **CHỈ hỏi tên HR** — TUYỆT ĐỐI KHÔNG hỏi công ty ở tin nhắn đầu tiên này.
+          - Hỏi công ty là bước tiếp theo, sau khi đã biết tên.
+          ${
+            alreadyHasName
+              ? `- Mình đã biết tên HR là ${profile.name}. Chào bằng tên, rồi hỏi nhẹ về công ty.`
+              : `- Ví dụ câu trả lời: "Chào bạn! Mình là Neko 😊 Rất vui được gặp bạn. Cho mình hỏi bạn tên gì để mình tiện xưng hô nhé?"`
+          }
+          - Câu ngắn, thân thiện, KHÔNG formal, KHÔNG hỏi nhiều thứ cùng lúc.
+        `.trim();
     }
 
     // ── Trường hợp từ chối ───────────────────────────────────────────────────
     if (profile.hasRefusedInfo) {
       return `
-## TRẠNG THÁI HR: TỪ CHỐI CUNG CẤP THÔNG TIN
+        ## TRẠNG THÁI HR: TỪ CHỐI CUNG CẤP THÔNG TIN
 
-HR đã từ chối cung cấp tên và/hoặc tên công ty.
+        HR đã từ chối cung cấp tên và/hoặc tên công ty.
 
-HƯỚNG DẪN:
-- Xưng "mình", gọi HR là "bạn" (dù chưa biết tên).
-- Nhắc khéo léo một lần nữa rằng trao đổi sẽ chuyên nghiệp hơn nếu mình biết đối phương là ai.
-- Gợi ý HR có thể gửi thông tin và JD đến email cá nhân: ${CONTACT_EMAIL}
-- Ví dụ: "Mình hiểu nếu bạn chưa tiện chia sẻ. Nếu muốn, bạn có thể gửi JD và thông tin liên hệ về ${CONTACT_EMAIL} — mình sẽ phản hồi chi tiết hơn qua đó nhé!"
-- Vẫn trả lời ngắn gọn câu hỏi kỹ thuật nếu HR hỏi, nhưng không đi sâu vào thoả thuận.
+        HƯỚNG DẪN:
+        - Xưng "mình", gọi HR là "bạn" (dù chưa biết tên).
+        - Nhắc khéo léo một lần nữa rằng trao đổi sẽ chuyên nghiệp hơn nếu mình biết đối phương là ai.
+        - Gợi ý HR có thể gửi thông tin và JD đến email cá nhân: ${CONTACT_EMAIL}
+        - Ví dụ: "Mình hiểu nếu bạn chưa tiện chia sẻ. Nếu muốn, bạn có thể gửi JD và thông tin liên hệ về ${CONTACT_EMAIL} — mình sẽ phản hồi chi tiết hơn qua đó nhé!"
+        - Vẫn trả lời ngắn gọn câu hỏi kỹ thuật nếu HR hỏi, nhưng không đi sâu vào thoả thuận.
       `.trim();
     }
 
@@ -262,16 +262,16 @@ HƯỚNG DẪN:
     if (!isProfileComplete) {
       const missingLabels = missingFields.map((f) => (f === 'name' ? 'tên' : 'tên công ty'));
       return `
-## TRẠNG THÁI HR: ĐANG THU THẬP THÔNG TIN
+        ## TRẠNG THÁI HR: ĐANG THU THẬP THÔNG TIN
 
-Thông tin còn thiếu: ${missingLabels.join(', ')}.
+        Thông tin còn thiếu: ${missingLabels.join(', ')}.
 
-HƯỚNG DẪN:
-- Xưng "mình", gọi HR là "bạn".
-- Trước khi trả lời bất kỳ câu hỏi chuyên môn nào, hãy hỏi thông tin còn thiếu một cách tự nhiên, thân thiện.
-- Ví dụ (thiếu cả hai): "Chào bạn! Trước khi mình chia sẻ thêm, cho mình hỏi bạn tên gì và đang công tác tại công ty nào nhỉ? 😊"
-- Ví dụ (đã có tên, thiếu công ty): "Cảm ơn ${firstName}! Bạn đang công tác tại công ty nào vậy?"
-- Nếu HR né tránh 2 lần liên tiếp, gợi ý gửi thông tin qua email: ${CONTACT_EMAIL}
+        HƯỚNG DẪN:
+        - Xưng "mình", gọi HR là "bạn".
+        - Trước khi trả lời bất kỳ câu hỏi chuyên môn nào, hãy hỏi thông tin còn thiếu một cách tự nhiên, thân thiện.
+        - Ví dụ (thiếu cả hai): "Chào bạn! Trước khi mình chia sẻ thêm, cho mình hỏi bạn tên gì và đang công tác tại công ty nào nhỉ? 😊"
+        - Ví dụ (đã có tên, thiếu công ty): "Cảm ơn ${firstName}! Bạn đang công tác tại công ty nào vậy?"
+        - Nếu HR né tránh 2 lần liên tiếp, gợi ý gửi thông tin qua email: ${CONTACT_EMAIL}
       `.trim();
     }
 
@@ -289,37 +289,38 @@ HƯỚNG DẪN:
     }
 
     return `
-## TRẠNG THÁI HR: ĐÃ CÓ ĐỦ THÔNG TIN
+      ## TRẠNG THÁI HR: ĐÃ CÓ ĐỦ THÔNG TIN
 
-- Tên HR: ${profile.name} (gọi là ${firstName})
-- Công ty: ${profile.company}
-- Xác thực công ty: ${verificationNote}
+      - Tên HR: ${profile.name} (gọi là ${firstName})
+      - Công ty: ${profile.company}
+      - Xác thực công ty: ${verificationNote}
 
-HƯỚNG DẪN:
-- Xưng "Sếp của mình", gọi HR là "${firstName}" khi cần thiết (hỏi lại, xác nhận) — KHÔNG bắt đầu mỗi câu trả lời bằng "Chào ${firstName}" hay "Lan ơi..." vì sẽ rất giả tạo và lặp lại.
-- Đi thẳng vào nội dung câu hỏi, tự nhiên như người đang trò chuyện bình thường.
-- Tiếp tục trao đổi về cơ hội công việc, JD, yêu cầu vị trí.
-- Nếu HR hỏi về lương, thời gian bắt đầu, hoặc muốn gửi JD chi tiết: gợi ý gửi về ${CONTACT_EMAIL}.
-- Ví dụ gợi ý JD: "${firstName} có thể gửi JD chi tiết về vị trí này đến email ${CONTACT_EMAIL} — mình sẽ xem kỹ và phản hồi sớm nhé!"
+      HƯỚNG DẪN:
+      - Xưng "Sếp của mình", gọi HR là "${firstName}"
+      - Đi thẳng vào nội dung câu hỏi, tự nhiên như người đang trò chuyện bình thường.
+      - Tiếp tục trao đổi về cơ hội công việc, JD, yêu cầu vị trí.
+      - Nếu HR hỏi về lương, thời gian bắt đầu, hoặc muốn gửi JD chi tiết: gợi ý gửi về ${CONTACT_EMAIL}.
+      - Ví dụ gợi ý JD: "${firstName} có thể gửi JD chi tiết về vị trí này đến email ${CONTACT_EMAIL} — Sếp của mình sẽ xem kỹ và phản hồi sớm nhé!"
     `.trim();
   }
+  // - Xưng "Sếp của mình", gọi HR là "${firstName}" khi cần thiết (hỏi lại, xác nhận) — KHÔNG bắt đầu mỗi câu trả lời bằng "Chào ${firstName}" hay "Lan ơi..." vì sẽ rất giả tạo và lặp lại.
+
 
   // ── Internet Search ────────────────────────────────────────────────────────
-
   /**
-   * Tìm kiếm thông tin công ty qua Brave Search API (hoặc fallback sang DuckDuckGo).
+   * Tìm kiếm thông tin công ty qua Brave Search hoặc fallback sang SERPER (Google Search API)).
    * Cần set env: BRAVE_SEARCH_API_KEY hoặc SERPER_API_KEY
    */
   async searchCompanyOnline(companyName: string): Promise<CompanySearchResult> {
     if (!companyName || companyName.trim().length < 2) return { found: false };
 
     try {
-      // Ưu tiên Brave Search nếu có API key
+      // Ưu tiên Brave Search nếu có API key ( thằng này tốn tiền - nhưng lưu lại để sau này có cái mà dùng =)))
       if (process.env.BRAVE_SEARCH_API_KEY) {
         return await this.searchViaBrave(companyName);
       }
 
-      // Fallback: Serper (Google Search API)
+      // Serper (Google Search API)
       if (process.env.SERPER_API_KEY) {
         return await this.searchViaSerper(companyName);
       }
