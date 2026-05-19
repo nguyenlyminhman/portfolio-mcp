@@ -40,7 +40,7 @@ export class McpGithubService {
         repo_name: true,
         description: true,
         tech_stack: true,
-        highlights: true,
+        // highlights: true,
         github_url: true,
         live_url: true,
         sort_order: true,
@@ -51,7 +51,7 @@ export class McpGithubService {
       name: p.repo_name,
       description: p.description,
       tech_stack: p.tech_stack,
-      highlights: p.highlights,
+      // highlights: p.highlights,
       github_url: p.github_url,
       live_url: p.live_url,
     }));
@@ -70,7 +70,7 @@ export class McpGithubService {
       name: project.repo_name,
       description: project.description,
       tech_stack: project.tech_stack,
-      highlights: project.highlights,
+      // highlights: project.highlights,
       // markdown: project.markdown,
       github_url: project.github_url,
       live_url: project.live_url,
@@ -128,14 +128,14 @@ export class McpGithubService {
       async ({ repo }) => {
         const project = await this.db.projects.findFirst({
           where: { repo_name: repo, is_active: true },
-          select: { markdown: true },
+          select: { highlights: true },
         });
 
         if (!project) {
           throw new Error(`Project "${repo}" not found`);
         }
 
-        return { content: [{ type: 'text', text: project.markdown }] };
+        return { content: [{ type: 'text', text: project.highlights }] };
       },
     );
   }
