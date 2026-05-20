@@ -90,10 +90,10 @@ export class McpGithubService {
   private registerListRepos() {
     this.server.tool(
       'list_repos',
-      `Liệt kê tất cả các project trong portfolio. Gọi khi HR/Tech hỏi:
-       - "Bạn có project nào?"
-       - "Cho tôi xem portfolio code của bạn"
-       - "Những dự án tiêu biểu của bạn là gì?"`,
+      `List all portfolio projects. Use this tool when HR/Tech asks:
+       - "What projects do you have?"
+       - "Show me your portfolio code"
+       - "What are your representative projects?"`,
       {},
       async () => {
         const repos = await this.fetchRepos();
@@ -105,11 +105,11 @@ export class McpGithubService {
   private registerGetRepoDetail() {
     this.server.tool(
       'get_repo_detail',
-      `Lấy thông tin chi tiết của một project. Gọi khi Tech hỏi:
-       - "Repo này dùng công nghệ gì?"
-       - "Highlights của project X là gì?"
-       - "Bạn maintain repo này bao lâu rồi?"`,
-      { repo: z.string().describe('Tên repo cần xem chi tiết') },
+      `Get detailed information about a project. Use this tool when Tech asks:
+       - "What technologies does this repo use?"
+       - "What are the highlights of project X?"
+       - "How long have you maintained this repo?"`,
+      { repo: z.string().describe('Repository name to inspect') },
       async ({ repo }) => {
         const detail = await this.fetchRepoDetail(repo);
         return { content: [{ type: 'text', text: JSON.stringify(detail, null, 2) }] };
@@ -120,11 +120,11 @@ export class McpGithubService {
   private registerGetReadme() {
     this.server.tool(
       'get_readme',
-      `Lấy nội dung markdown chi tiết của một project. Gọi khi Tech hỏi:
-       - "Project X này làm gì?"
-       - "Architecture của project này thế nào?"
-       - "Cho tôi xem mô tả đầy đủ của project X"`,
-      { repo: z.string().describe('Tên repo cần xem README') },
+      `Get detailed markdown/highlight content for a project. Use this tool when Tech asks:
+       - "What does project X do?"
+       - "What is the architecture of this project?"
+       - "Show me the full description of project X"`,
+      { repo: z.string().describe('Repository name to read') },
       async ({ repo }) => {
         const project = await this.db.projects.findFirst({
           where: { repo_name: repo, is_active: true },
@@ -139,4 +139,22 @@ export class McpGithubService {
       },
     );
   }
+
+
+  async getRepoSummary() {
+    const repos = await this.fetchRepos();
+    return repos.slice(0, 8).map((repo) => ({ name: repo.name, description: repo.description, tech_stack: repo.tech_stack, github_url: repo.github_url, live_url: repo.live_url }));
+  }
+
+  async findRelatedProjects(skills: string[]) {
+    const repos = await this.fetchRepos();
+    const normalized = skills.map((s) => s.toLowerCase());
+    return repos.filter((repo) => { const text = `${repo.name} ${repo.description} ${JSON.stringify(repo.tech_stack || [])}`.toLowerCase(); return normalized.some((skill) => text.includes(skill)); });
+  }
+
+  async getOwnershipRelatedProjects() {
+    const repos = await this.fetchRepos();
+    return repos.filter((repo) => ['spring.cqrs', 'portfolio-mcp', 'spring-batchop'].includes(repo.name));
+  }
+
 }
