@@ -980,7 +980,7 @@ export class ChatService {
 
     // Chuẩn hoá role về 'user' | 'model'.
     // Model messages must stay semantically complete enough to prevent "warm up" repetition.
-    const MAX_MODEL_MSG_LENGTH = 1200;
+    const MAX_MODEL_MSG_LENGTH = 3000;
     const normalized = previousMessages
       .map((m) => {
         const isUser = m.role === 'hr' || m.role === 'user';
@@ -1027,8 +1027,8 @@ export class ChatService {
         }
 
         last.parts[0].text = `${last.parts[0].text}
----
-${msg.parts[0].text}`.trim();
+        ---
+        ${msg.parts[0].text}`.trim();
         continue;
       }
       chatHistory.push(msg as Content);
