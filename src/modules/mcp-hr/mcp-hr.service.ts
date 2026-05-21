@@ -8,8 +8,6 @@ export interface HrProfile {
   company?: string;
   companyWebsite?: string;
   companyDescription?: string;
-  companySearchTitle?: string;
-  companyIndustryHint?: string;
   companyAddress?: string;
   isCompanyVerified?: boolean;
   hasRefusedInfo?: boolean;
@@ -26,8 +24,6 @@ export interface CompanySearchResult {
   found: boolean;
   website?: string;
   description?: string;
-  sourceTitle?: string;
-  industryHint?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -129,8 +125,6 @@ export class McpHrService {
       merged.isCompanyVerified = searchResult.found;
       if (searchResult.website) merged.companyWebsite = searchResult.website;
       if (searchResult.description) merged.companyDescription = searchResult.description;
-      if (searchResult.sourceTitle) merged.companySearchTitle = searchResult.sourceTitle;
-      if (searchResult.industryHint) merged.companyIndustryHint = searchResult.industryHint;
     }
 
     // Tách name ra lưu vào user_agent, phần còn lại lưu vào company_hint
@@ -177,8 +171,8 @@ export class McpHrService {
       if (nameMatch) updates.name = nameMatch[1].trim();
     }
 
-    // 3. Extract tên công ty (nếu chưa có)
-    if (!existing.company) {
+    // 3. Extract tên công ty (chỉ sau khi đã biết tên HR, tránh skip luồng onboarding)
+    if (!existing.company && existing.name) {
       // Pattern 1: có keyword dẫn đầu (từ/bên/ở/tại/thuộc/của/công ty)
       const companyWithKeyword = message.match(
         /(?:(?:từ|bên|ở|tại|thuộc|của)\s+(?:công\s*ty\s+)?|công\s*ty\s+)([A-Za-zÀ-ỹ0-9][A-Za-zÀ-ỹ0-9\s&.,\-]{1,60}?)(?=\s*[,\.!?\n]|$)/ui,
@@ -328,20 +322,29 @@ ${this.buildProductionRules()}
     // ── Trường hợp đã đủ thông tin ───────────────────────────────────────────
     let verificationNote = '';
     if (profile.isCompanyVerified) {
-      verificationNote = `Company "${profile.company}" was found/verified. Start with one short, sincere compliment about its reputation or industry. Avoid exaggerated praise. Example Vietnamese wording: "Mình có biết ${profile.company}, công ty đang hoạt động khá nổi ở mảng [industry]."`;
-      if (profile.companyWebsite) {
-        verificationNote += ` Website: ${profile.companyWebsite}.`;
-      }
-      if (profile.companyDescription) {
-        verificationNote += ` Sanitized company summary: ${profile.companyDescription}.`;
-      }
-      if (profile.companyIndustryHint) {
-        verificationNote += ` Industry/domain hint: ${profile.companyIndustryHint}. Use this only to adapt answer depth; do not over-praise.`;
-      }
+      // IMPORTANT: only use facts from companyDescription — never infer or hallucinate industry/size/product
+      const descriptionFact = profile.companyDescription
+        ? `Use ONLY this verified description to mention the company (do NOT infer or add details beyond it): "${profile.companyDescription}".`
+        : `No description available. Do NOT invent any details about the company's industry, product, or size.`;
+      const websiteFact = profile.companyWebsite
+        ? `Website: ${profile.companyWebsite}.`
+        : '';
+      verificationNote = [
+        `Company "${profile.company}" was found online.`,
+        `You may acknowledge knowing the company with ONE brief factual sentence.`,
+        descriptionFact,
+        websiteFact,
+        `If you cannot say something factually grounded, skip the company mention entirely and go straight to answering the HR question.`,
+      ].filter(Boolean).join(' ');
     } else if (profile.companyAddress || profile.companyWebsite) {
-      verificationNote = `HR provided additional company information (${profile.companyAddress ?? profile.companyWebsite}). Acknowledge it and continue normally.`;
+      verificationNote = `HR provided additional company information (${profile.companyAddress ?? profile.companyWebsite}). Acknowledge it briefly and continue normally. Do NOT infer anything beyond what was provided.`;
     } else {
-      verificationNote = `No reliable online company information was found for "${profile.company}". Politely mention this and ask for website/address if helpful. Example Vietnamese wording: "Mình tìm sơ qua nhưng chưa gặp thông tin về ${profile.company}. Nếu được, bạn cho mình xin website hoặc địa chỉ công ty để mình tham khảo thêm nhé!"`;
+      verificationNote = [
+        `No reliable online information was found for "${profile.company}".`,
+        `Do NOT guess or invent any details about this company.`,
+        `You may politely say you couldn't find much online and ask for website/address.`,
+        `Example Vietnamese: "Mình tìm sơ qua nhưng chưa gặp thông tin về ${profile.company}. Nếu được, bạn cho mình xin website hoặc địa chỉ công ty để mình tham khảo thêm nhé!"`,
+      ].join(' ');
     }
 
     return `
@@ -415,58 +418,9 @@ ${this.buildProductionRules()}
     try { return await fetch(url, { ...options, signal: controller.signal }); } finally { clearTimeout(timer); }
   }
 
-  private companyNameTokens(companyName: string): string[] {
-    return this.sanitizeSearchText(companyName)
-      .toLowerCase()
-      .split(/[^a-z0-9à-ỹ]+/i)
-      .filter((x) => x.length >= 3 && !['company', 'công', 'ty', 'ltd', 'inc', 'corp', 'group'].includes(x));
-  }
-
-  private looksRelevantCompanyResult(companyName: string, title = '', description = '', url = ''): boolean {
-    const haystack = `${title} ${description} ${url}`.toLowerCase();
-    const tokens = this.companyNameTokens(companyName);
-    if (tokens.length === 0) return false;
-
-    // Với tên nhiều từ, chỉ cần match phần lớn token. Ví dụ "Ampere Computing" match cả ampere/computing.
-    const matched = tokens.filter((token) => haystack.includes(token)).length;
-    return matched >= Math.min(tokens.length, 2);
-  }
-
-  private inferIndustryHint(text: string): string | undefined {
-    const lower = (text || '').toLowerCase();
-    const rules: Array<[RegExp, string]> = [
-      [/(semiconductor|chip|processor|cpu|arm-based|data center|cloud native processor)/i, 'semiconductor / cloud infrastructure'],
-      [/(fintech|bank|financial|payment|lending|insurance)/i, 'financial technology'],
-      [/(software|technology|digital transformation|it services|outsourcing)/i, 'software / IT services'],
-      [/(healthcare|medical|pharma|clinic|hospital)/i, 'healthcare'],
-      [/(retail|ecommerce|e-commerce|commerce|consumer)/i, 'retail / commerce'],
-      [/(manufacturing|factory|industrial|supply chain)/i, 'manufacturing / industrial'],
-    ];
-
-    return rules.find(([pattern]) => pattern.test(lower))?.[1];
-  }
-
-  private buildCompanyResult(companyName: string, item: { title?: string; description?: string; url?: string; link?: string; snippet?: string }): CompanySearchResult {
-    const title = this.sanitizeSearchText(item.title || '');
-    const description = this.sanitizeSearchText(item.description || item.snippet || title);
-    const url = this.safeUrl(item.url || item.link);
-
-    if (!this.looksRelevantCompanyResult(companyName, title, description, url || '')) {
-      return { found: false };
-    }
-
-    return {
-      found: true,
-      website: url,
-      sourceTitle: title || undefined,
-      description,
-      industryHint: this.inferIndustryHint(`${title} ${description}`),
-    };
-  }
-
   private async searchViaBrave(companyName: string): Promise<CompanySearchResult> {
-    const query = encodeURIComponent(`"${companyName}" company official website industry`);
-    const res = await this.fetchWithTimeout(`https://api.search.brave.com/res/v1/web/search?q=${query}&count=5`, {
+    const query = encodeURIComponent(`${companyName} company Vietnam`);
+    const res = await this.fetchWithTimeout(`https://api.search.brave.com/res/v1/web/search?q=${query}&count=3`, {
       headers: {
         Accept: 'application/json',
         'Accept-Encoding': 'gzip',
@@ -479,16 +433,14 @@ ${this.buildProductionRules()}
     const data = await res.json();
     const results = data?.web?.results ?? [];
 
-    for (const item of results) {
-      const result = this.buildCompanyResult(companyName, {
-        title: item?.title,
-        description: item?.description,
-        url: item?.url,
-      });
-      if (result.found) return result;
-    }
+    if (results.length === 0) return { found: false };
 
-    return { found: false };
+    const first = results[0];
+    return {
+      found: true,
+      website: this.safeUrl(first.url),
+      description: this.sanitizeSearchText(first.description || first.title),
+    };
   }
 
   private async searchViaSerper(companyName: string): Promise<CompanySearchResult> {
@@ -498,7 +450,7 @@ ${this.buildProductionRules()}
         'X-API-KEY': process.env.SERPER_API_KEY,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ q: `"${companyName}" company official website industry`, num: 5 }),
+      body: JSON.stringify({ q: `${companyName} công ty`, num: 3 }),
     });
 
     if (!res.ok) return { found: false };
@@ -506,15 +458,12 @@ ${this.buildProductionRules()}
     const data = await res.json();
     const organic = data?.organic ?? [];
 
-    for (const item of organic) {
-      const result = this.buildCompanyResult(companyName, {
-        title: item?.title,
-        snippet: item?.snippet,
-        link: item?.link,
-      });
-      if (result.found) return result;
-    }
+    if (organic.length === 0) return { found: false };
 
-    return { found: false };
+    return {
+      found: true,
+      website: this.safeUrl(organic[0]?.link),
+      description: this.sanitizeSearchText(organic[0]?.snippet || organic[0]?.title),
+    };
   }
 }

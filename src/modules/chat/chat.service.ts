@@ -132,135 +132,15 @@ function normalizeBotAnswer(text: string, shouldAllowGreeting: boolean): string 
   // Remove apology loops caused by previous partial streams (at start of reply)
   output = output.replace(/^\s*(xin lỗi[^.?!]*(bị ngắt|ngắt quãng|câu trả lời trước)[^.?!]*[.?!])\s*/i, '').trimStart();
 
-  // Remove repeated "Về X, Mẫn có..." recap blocks that mirror the previous bot turn.
+  // Remove repeated recap blocks that mirror the previous bot turn.
+  // Gemini "repairs" a partial stream by re-summarising the old answer before the new one.
+  // We detect several patterns: "Về X, Mẫn có...", "Như đã đề cập...", "Trước đó...", etc.
   output = output.replace(
-    /^(về\s+[^\n,]{3,60}[,，]\s*Mẫn\s+có[^\n]{10,400}(?:\n\n|$))/i,
+    /^((?:về\s+[^\n,]{3,60}[,，]|như\s+(?:đã|mình)\s+(?:đề cập|chia sẻ|nói)[^\n]{0,80}|trước\s+(?:đó|khi)[^\n]{0,60}|như\s+đã\s+đề\s+cập[^\n]{0,80})[^\n]{0,400}\n\n)/i,
     '',
   ).trimStart();
 
   return output;
-}
-
-function splitIntoDisplayChunks(text: string, chunkSize = 220): string[] {
-  const cleaned = (text || '').trim();
-  if (!cleaned) return [];
-
-  const chunks: string[] = [];
-  for (let i = 0; i < cleaned.length; i += chunkSize) {
-    chunks.push(cleaned.slice(i, i + chunkSize));
-  }
-  return chunks;
-}
-
-function normalizeTopicText(text: string): string {
-  return (text || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd');
-}
-
-function detectQuestionTopic(message: string): 'java' | 'node' | 'leadership' | 'language' | 'devops' | 'cloud' | 'other' {
-  const q = normalizeTopicText(message);
-
-  if (/\b(java|spring|spring boot)\b/.test(q)) return 'java';
-  if (/\b(nodejs|node\.js|node|nestjs|express)\b/.test(q)) return 'node';
-  if (/\b(lead|leader|leadership|team lead|quan ly doi|dan dat|lead team)\b/.test(q)) return 'leadership';
-  if (/\b(ngoai ngu|english|tieng anh|japanese|tieng nhat|jlpt|language)\b/.test(q)) return 'language';
-  if (/\b(devops|docker|kubernetes|k8s|jenkins|github actions|ci\/cd|cicd|deploy|deployment)\b/.test(q)) return 'devops';
-  if (/\b(cloud|aws|ec2|s3|cloudwatch|gcp|azure)\b/.test(q)) return 'cloud';
-
-  return 'other';
-}
-
-function firstSentenceOf(text: string): string {
-  const cleaned = (text || '').trim();
-  const idx = cleaned.search(/[.!?。]\s|\n\n/);
-  if (idx === -1) return cleaned;
-  return cleaned.slice(0, idx + 1).trim();
-}
-
-function removeForbiddenOpeningByTopic(answer: string, topic: ReturnType<typeof detectQuestionTopic>): string {
-  let output = (answer || '').trim();
-  if (!output || topic === 'other') return output;
-
-  const forbiddenByTopic: Record<string, RegExp[]> = {
-    leadership: [
-      /\b(java|spring boot|spring|node\.js|nodejs|nestjs|express)\b/i,
-    ],
-    language: [
-      /\b(java|spring boot|spring|node\.js|nodejs|nestjs|express|backend team lead|terralogic)\b/i,
-    ],
-    devops: [
-      /\b(java|spring boot|spring|node\.js|nodejs|nestjs|express|backend team lead|terralogic)\b/i,
-    ],
-    cloud: [
-      /\b(java|spring boot|spring|node\.js|nodejs|nestjs|express|backend team lead|terralogic)\b/i,
-    ],
-    java: [
-      /\b(node\.js|nodejs|nestjs|express|backend team lead|terralogic)\b/i,
-    ],
-    node: [
-      /\b(backend team lead|terralogic)\b/i,
-    ],
-    other: [],
-  };
-
-  // Strip up to 3 opening sentences/paragraphs if they mention forbidden previous topics.
-  for (let i = 0; i < 3; i++) {
-    const first = firstSentenceOf(output);
-    if (!first) break;
-
-    const forbidden = (forbiddenByTopic[topic] || []).some((pattern) => pattern.test(first));
-    const looksLikeRecap = /^(về\s+|ngoài ra,?\s*)?mẫn\s+có\s+(kinh nghiệm|nền tảng|thế mạnh|kỹ năng)|^với\s+|^cụ\s+thể[,，]?\s+mẫn|^trong\s+vai\s+trò|^mẫn\s+từng/i.test(first);
-
-    if (!forbidden || !looksLikeRecap) break;
-
-    output = output.slice(first.length).replace(/^\s*[\n.。!?-]+\s*/, '').trimStart();
-  }
-
-  return output.trim();
-}
-
-function removeTopicRecapFromAnswer(userMessage: string, answer: string, shouldAllowGreeting: boolean): string {
-  const topic = detectQuestionTopic(userMessage);
-  let output = normalizeBotAnswer(answer, shouldAllowGreeting);
-
-  output = removeForbiddenOpeningByTopic(output, topic);
-
-  // Generic hard-strip for common model recap openings.
-  const recapOpenings = [
-    /^mẫn\s+có\s+kinh\s+nghiệm\s+(?:vững\s+chắc|sâu\s+rộng|tốt)\s+với\s+java[^.?!。]*(?:[.?!。]|\n\n)\s*/i,
-    /^mẫn\s+có\s+kinh\s+nghiệm\s+với\s+cả\s+java[^.?!。]*(?:[.?!。]|\n\n)\s*/i,
-    /^về\s+java[^.?!。]*(?:[.?!。]|\n\n)\s*/i,
-    /^về\s+node\.?js[^.?!。]*(?:[.?!。]|\n\n)\s*/i,
-    /^mẫn\s+đã\s+áp\s+dụng\s+node\.?js[^.?!。]*(?:[.?!。]|\n\n)\s*/i,
-  ];
-
-  for (const pattern of recapOpenings) {
-    output = output.replace(pattern, '').trimStart();
-  }
-
-  return output.trim();
-}
-
-
-function buildFallbackAnswerForTopic(userMessage: string): string {
-  const topic = detectQuestionTopic(userMessage);
-
-  if (topic === 'leadership') {
-    return 'Mẫn có kinh nghiệm lead ở vai trò Backend Team Lead tại Terralogic Vietnam giai đoạn 11/2022–03/2024. Trong vai trò này, Mẫn phụ trách dẫn dắt backend team, review hướng xử lý kỹ thuật, phối hợp với các bên liên quan và đảm bảo chất lượng delivery cho dự án.';
-  }
-
-  if (topic === 'language') {
-    return 'Về ngoại ngữ, Mẫn có thể giao tiếp tiếng Anh trong công việc và có nền tảng tiếng Nhật JLPT N4. Điều này phù hợp cho môi trường làm việc có tài liệu kỹ thuật tiếng Anh, trao đổi với team quốc tế hoặc phối hợp với khách hàng/đối tác nước ngoài.';
-  }
-
-  if (topic === 'devops' || topic === 'cloud') {
-    return 'Về DevOps/Cloud, Mẫn có kinh nghiệm với Docker, CI/CD bằng Jenkins/GitHub Actions, triển khai service trên EC2/AWS và có nền tảng với Kubernetes/nginx-ingress. Các kinh nghiệm này gắn với những dự án backend Spring Boot/NestJS, nơi cần containerize service, build/deploy pipeline và vận hành ứng dụng trên server/cloud.';
-  }
-
-  return '';
 }
 
 function buildLatestOnlyInstruction(mode: PromptMode): string {
@@ -301,15 +181,21 @@ You are Neko, the AI assistant of Nguyễn Lý Minh Mẫn, a Senior Full Stack S
 
 Core rules:
 - Support HR/recruiters with questions about Mẫn's CV, skills, work experience, GitHub projects, working style, and career background.
-- Be warm, concise, professional, and conversational.
+- Be warm, professional, and conversational.
 - Reply in the same language as the latest HR message when possible.
-- Prefer 3–8 useful sentences or short bullets; avoid one-line generic answers for skill questions.
+- Answer length: 4–10 sentences for factual questions; use short bullets only when listing 3+ items.
 - Use emojis lightly: max one emoji per response; avoid emojis in technical, salary, JD, or serious discussions.
 - Never repeat the opening greeting after onboarding.
 - Do not start every answer with "Chào [name]".
 - Do not summarize or repeat old messages unless the latest HR message explicitly asks to continue.
 - Answer only the latest HR message by default.
 - Never repair or continue a previous partial answer unless the HR says "tiếp đi" / "continue".
+
+Evidence rules (CRITICAL):
+- Always back claims with at least one concrete reference: company name, project name, time period, or GitHub repo.
+- Bad: "Mẫn có kinh nghiệm với Docker." Good: "Tại Terralogic Vietnam (2022–2024) Mẫn đã dùng Docker để containerize các microservices và setup CI/CD pipeline với Jenkins."
+- Bad: "Mẫn biết Node.js." Good: "Mẫn có ~5 năm với Node.js/NestJS, thể hiện qua dự án energy-hub (DDD + Prisma + PostgreSQL) và portfolio-mcp (NestJS + Google Gemini AI)."
+- If the CV/context does not have enough evidence for a specific claim, say so clearly instead of making vague assertions.
 
 Accuracy:
 - Use only the provided CV/GitHub/session context.
@@ -365,28 +251,8 @@ Escalation/contact mode:
 `.trim();
 }
 
-function buildAnswerQualityRules(): string {
-  return `
-Answer quality and strict latest-topic rules:
-- Answer ONLY the latest HR question unless the HR explicitly asks to continue.
-- Start directly with the answer to the latest topic.
-- NEVER recap Java, Node.js, leadership, language, DevOps, or any previous topic before answering a new topic.
-- NEVER repair, continue, complete, or rewrite an older partial answer.
-- If HR asks about leadership: answer leadership ONLY. Do not mention Java/Node.js unless HR asks.
-- If HR asks about language: answer language ONLY. Do not mention leadership or technical skills unless HR asks.
-- If HR asks about DevOps/Cloud: answer DevOps/Cloud ONLY. Do not warm up with Java/Node.js/leadership.
-- Never answer skills with generic claims only.
-- When discussing a skill, include concrete evidence when available: project name, company/context, technology usage, and practical scenario.
-- For Java: mention Spring Boot, financial systems, backend services, microservices, or relevant GitHub projects when supported by context.
-- For Node.js: mention NestJS/Express/TypeScript and projects such as portfolio-mcp, energy-hub, MCP, or AI chatbot when supported by context.
-- For DevOps: mention Docker, CI/CD, Jenkins/GitHub Actions, EC2/AWS, Kubernetes/nginx-ingress, or deployment context when supported by context.
-- For leadership: mention Backend Team Lead at Terralogic Vietnam only if leadership is asked.
-- Prefer 2–4 short paragraphs or bullets with evidence over one very short sentence.
-`.trim();
-}
-
 function buildSystemPrompt(yearsOfExperience: string, mode: PromptMode = 'GENERAL'): string {
-  const parts = [buildCorePrompt(yearsOfExperience), buildSecurityRules(), buildAnswerQualityRules()];
+  const parts = [buildCorePrompt(yearsOfExperience), buildSecurityRules()];
 
   if (mode === 'JD_MATCH') {
     parts.push(buildJdRules());
@@ -584,26 +450,50 @@ export class ChatService {
     // serviceTier: 'standard'
   // },
 
-          // IMPORTANT:
-          // Do not forward Gemini chunks immediately.
-          // Gemini may start with a recap of the previous answer, and once streamed to FE
-          // we cannot take it back. So we collect the raw answer, hard-strip recap, then
-          // emit the cleaned answer in small chunks to keep the FE streaming UX.
+          let firstChunkBuffer = '';
+          let firstChunkReleased = false;
+          // Track the "display reply" — what FE actually shows — separately from raw accumulator.
+          // This ensures DB always stores exactly what FE displayed, eliminating the 20% divergence.
+          let displayReply = '';
+
           for await (const chunk of result.stream) {
             const text = chunk.text();
             if (!text) continue;
+
             fullReply += text;
+
+            // Hold the beginning briefly so we can remove repeated greetings before FE displays them.
+            if (!firstChunkReleased) {
+              firstChunkBuffer += text;
+              const canRelease = firstChunkBuffer.length >= 160 || /[\n.!?]/.test(firstChunkBuffer);
+
+              if (canRelease) {
+                const cleanedStart = normalizeBotAnswer(firstChunkBuffer, shouldAllowGreeting);
+                if (cleanedStart) {
+                  displayReply += cleanedStart;
+                  subscriber.next({ data: { chunk: cleanedStart } });
+                }
+                firstChunkReleased = true;
+              }
+              continue;
+            }
+
+            displayReply += text;
+            subscriber.next({ data: { chunk: text } });
           }
 
-          fullReply = removeTopicRecapFromAnswer(safeUserMessage, fullReply, shouldAllowGreeting);
-          if (!fullReply) {
-            fullReply = buildFallbackAnswerForTopic(safeUserMessage) || 'Mình có thể chia sẻ thêm theo đúng ý bạn, nhưng hiện chưa đủ dữ liệu rõ ràng trong CV/context để trả lời chắc chắn.';
+          if (!firstChunkReleased && firstChunkBuffer) {
+            const cleanedStart = normalizeBotAnswer(firstChunkBuffer, shouldAllowGreeting);
+            if (cleanedStart) {
+              displayReply += cleanedStart;
+              subscriber.next({ data: { chunk: cleanedStart } });
+            }
           }
+
+          // Use displayReply (what FE saw) as the canonical reply for DB persistence.
+          // Fall back to normalized fullReply only if displayReply is somehow empty.
+          fullReply = displayReply.trim() || normalizeBotAnswer(fullReply, shouldAllowGreeting);
           streamCompleted = true;
-
-          for (const chunk of splitIntoDisplayChunks(fullReply)) {
-            subscriber.next({ data: { chunk } });
-          }
 
           // res
           this.trackChatAnalytics({
@@ -880,56 +770,10 @@ export class ChatService {
     return JSON.stringify({ looksLikeJd, asksOwnership, matchedSkills: matchedSkills.map((skill) => ({ skill, estimate: skillMap[skill] })), partialSkills, notClearlyShown, relatedRepos, ownershipGuidance: asksOwnership ? 'Answer at a high level: Mẫn has participated in / handled end-to-end feature delivery. Do not claim sole architect or built everything alone.' : undefined, jdGuidance: looksLikeJd ? 'Provide compatibility summary only. Never say accepted/rejected/mismatch/fail.' : undefined }, null, 2);
   }
 
-  private normalizeModelHistoryMessage(text: string, status?: string): string {
-    let cleaned = stripOpeningGreeting(text || '')
-      .replace(/^\s*(xin lỗi[^.?!]*(bị ngắt|ngắt quãng|câu trả lời trước)[^.?!]*[.?!])\s*/i, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const normalizedStatus = String(status || '').toUpperCase();
-    if (normalizedStatus === 'PARTIAL') {
-      cleaned = this.truncateAtLastCompleteSentence(cleaned);
-    }
-
-    return cleaned;
-  }
-
-  private truncateAtLastCompleteSentence(text: string): string {
-    const cleaned = (text || '').trim();
-    const lastSentenceIdx = Math.max(
-      cleaned.lastIndexOf('.'),
-      cleaned.lastIndexOf('!'),
-      cleaned.lastIndexOf('?'),
-      cleaned.lastIndexOf('。'),
-    );
-
-    if (lastSentenceIdx > 80) {
-      return cleaned.slice(0, lastSentenceIdx + 1).trim();
-    }
-
-    return cleaned;
-  }
-
-  private truncateAtSentenceBoundary(text: string, maxLength: number): string {
-    const sliced = (text || '').slice(0, maxLength).trim();
-    const lastSentenceIdx = Math.max(
-      sliced.lastIndexOf('.'),
-      sliced.lastIndexOf('!'),
-      sliced.lastIndexOf('?'),
-      sliced.lastIndexOf('。'),
-    );
-
-    if (lastSentenceIdx > Math.floor(maxLength * 0.55)) {
-      return sliced.slice(0, lastSentenceIdx + 1).trim();
-    }
-
-    return `${sliced}…`;
-  }
-
   // ── Context Builder ────────────────────────────────────────────────────────
 
   private buildContext(params: {
-    history: { role: string; content: string; status?: string }[];
+    history: { role: string; content: string }[];
     cv: object | null;
     repos: object[];
     userMessage?: string;
@@ -961,7 +805,7 @@ export class ChatService {
     ${jdContext}
   </deterministic_jd_matching>` : ''}
   ${lastCompletedBotAnswer ? `<last_completed_bot_answer_for_continuation>
-    ${stripOpeningGreeting(String(lastCompletedBotAnswer)).slice(0, 1200)}
+    ${stripOpeningGreeting(String(lastCompletedBotAnswer)).slice(0, 3000)}
   </last_completed_bot_answer_for_continuation>` : ''}
   <input_control>
     input_was_truncated: ${Boolean(wasTruncated)}
@@ -971,35 +815,37 @@ export class ChatService {
     // Bỏ tin nhắn hiện tại (cuối cùng) ra khỏi history vì sẽ gửi qua sendMessageStream
     const previousMessages = history
       .slice(0, -1)
-      // Use only stable completed/legacy messages in model history.
-      // PARTIAL/STREAMING messages are the main cause of Gemini recap/repair behavior.
-      .filter((m: any) => {
-        const status = String(m.status || '').toUpperCase();
-        return !['STREAMING', 'FAILED', 'PARTIAL'].includes(status);
-      });
+      .filter((m: any) => !['STREAMING', 'FAILED', 'PARTIAL'].includes(String(m.status || '').toUpperCase()));
 
-    // Chuẩn hoá role về 'user' | 'model'.
-    // Model messages must stay semantically complete enough to prevent "warm up" repetition.
-    const MAX_MODEL_MSG_LENGTH = 3000;
-    const normalized = previousMessages
-      .map((m) => {
-        const isUser = m.role === 'hr' || m.role === 'user';
-        let text = m.content ?? '';
-
-        if (!isUser) {
-          text = this.normalizeModelHistoryMessage(text, m.status);
-        }
-
-        if (!isUser && text.length > MAX_MODEL_MSG_LENGTH) {
-          text = this.truncateAtSentenceBoundary(text, MAX_MODEL_MSG_LENGTH);
-        }
-
-        return {
-          role: isUser ? 'user' : 'model',
-          parts: [{ text: text.trim() }],
-        };
-      })
-      .filter((m) => m.parts[0].text.length > 0);
+    // Chuẩn hoá role về 'user' | 'model'
+    // Tin của model: giữ đủ dài để Gemini hiểu câu trả lời cũ là hoàn chỉnh
+    // (quá ngắn → Gemini thấy partial → cố recap lại trước khi trả lời mới)
+    // nhưng strip phần mở đầu thừa để không kéo Gemini vào vòng lặp greeting/recap.
+    const MAX_MODEL_MSG_LENGTH = 10000;
+    const normalized = previousMessages.map((m) => {
+      const isUser = m.role === 'hr' || m.role === 'user';
+      let text = m.content ?? '';
+      if (!isUser) {
+        // Strip greeting và apology ở đầu
+        text = stripOpeningGreeting(text);
+        text = text.replace(/^\s*(xin lỗi[^.?!]*(bị ngắt|ngắt quãng|câu trả lời trước)[^.?!]*[.?!])\s*/i, '').trimStart();
+        // Strip recap block ở đầu (Gemini repair pattern — nhiều dạng)
+        text = text.replace(
+          /^((?:về\s+[^\n,]{3,60}[,，]|như\s+(?:đã|mình)\s+(?:đề cập|chia sẻ|nói)[^\n]{0,80}|trước\s+(?:đó|khi)[^\n]{0,60}|như\s+đã\s+đề\s+cập[^\n]{0,80})[^\n]{0,400}\n\n)/i,
+          '',
+        ).trimStart();
+      }
+      if (!isUser && text.length > MAX_MODEL_MSG_LENGTH) {
+        // Cắt tại ranh giới câu gần nhất thay vì cắt cứng giữa chữ
+        const boundary = text.lastIndexOf('.', MAX_MODEL_MSG_LENGTH);
+        const cutAt = boundary > MAX_MODEL_MSG_LENGTH * 0.6 ? boundary + 1 : MAX_MODEL_MSG_LENGTH;
+        text = text.slice(0, cutAt).trimEnd() + ' […]';
+      }
+      return {
+        role: isUser ? 'user' : 'model',
+        parts: [{ text }],
+      };
+    });
 
     // Gemini yêu cầu: phải bắt đầu bằng 'user' và xen kẽ user/model
     // → bỏ các tin model ở đầu, rồi đảm bảo xen kẽ đúng
@@ -1014,21 +860,13 @@ export class ChatService {
       trimmed = trimmed.slice(firstUserIdx);
     }
 
-    // 2. Đảm bảo xen kẽ user/model: nếu 2 role giống nhau liên tiếp → gộp lại.
-    // Không drop message, vì drop sẽ tạo gap và Gemini dễ lặp câu trả lời cũ.
+    // 2. Đảm bảo xen kẽ user/model: nếu 2 role giống nhau liên tiếp → bỏ cái sau
+    // KHÔNG gộp nội dung vì sẽ khiến Gemini tóm tắt lại tin cũ trước khi trả lời
     const chatHistory: Content[] = [];
     for (const msg of trimmed) {
       const last = chatHistory[chatHistory.length - 1];
       if (last && last.role === msg.role) {
-        // Avoid making consecutive assistant chunks look like one unfinished continuation.
-        // Tiny duplicate chunks are usually stream leftovers, so skip them.
-        if (msg.parts[0].text.length < 80) {
-          continue;
-        }
-
-        last.parts[0].text = `${last.parts[0].text}
-        ---
-        ${msg.parts[0].text}`.trim();
+        // Bỏ qua — CV/GitHub context đã đủ để Gemini trả lời đúng
         continue;
       }
       chatHistory.push(msg as Content);
